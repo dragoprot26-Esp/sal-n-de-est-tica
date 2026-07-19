@@ -1,0 +1,6 @@
+{
+  "name": "Salón de Estética PWA",
+  "description": "Una aplicación web progresiva multi-inquilino premium para salones de estética con reservas, catálogo de productos, gestión de colaboradores, control biométrico simulado y panel de administración avanzado.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
