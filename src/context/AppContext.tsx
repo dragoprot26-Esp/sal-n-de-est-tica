@@ -47,6 +47,7 @@ interface AppContextProps {
   setCurrentUser: React.Dispatch<React.SetStateAction<{ role: 'admin' | 'collaborator'; id: string; name: string; username: string } | null>>;
   licenseCode: string;
   publicCode: string;
+  bloqueada: boolean;
   loginDueno: (codigo: string, usuario: string, pass: string) => Promise<{ ok: boolean; msg?: string }>;
   loginColab: (codigo: string, usuario: string, pass: string) => Promise<{ ok: boolean; msg?: string }>;
   logout: () => void;
@@ -138,6 +139,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Molde CyC: código de licencia (panel) y código público (?codigo=)
   const [licenseCode, setLicenseCode] = useState<string>('');
   const [publicCode, setPublicCode] = useState<string>('');
+  const [bloqueada, setBloqueada] = useState<boolean>(false);
   const hydratingRef = React.useRef(false);
   const saveTimerRef = React.useRef<any>(null);
 
@@ -546,6 +548,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const d = await bellaPublica(code);
       if (!d) return;
       const dd = d as any;
+      if (dd.bloqueada) { setBloqueada(true); return; }  // kill switch: local en mantenimiento
+      setBloqueada(false);
       hydratingRef.current = true;
       if (dd.tenants) { setTenants(dd.tenants); if (dd.tenants[0]) setActiveTenantState(dd.tenants[0]); }
       if (dd.services) setServices(dd.services);
@@ -601,6 +605,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setLanguage,
       licenseCode,
       publicCode,
+      bloqueada,
       loginDueno,
       loginColab,
       logout,
