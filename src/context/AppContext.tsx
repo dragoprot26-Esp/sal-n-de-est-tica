@@ -49,7 +49,7 @@ interface AppContextProps {
   publicCode: string;
   bloqueada: boolean;
   loginDueno: (codigo: string, usuario: string, pass: string) => Promise<{ ok: boolean; msg?: string }>;
-  loginColab: (codigo: string, usuario: string, pass: string) => Promise<{ ok: boolean; msg?: string }>;
+  loginColab: (codigo: string, usuario: string, pass: string) => Promise<{ ok: boolean; msg?: string; collab?: any }>;
   logout: () => void;
   pendingAccessRequests: { id: string; name: string; username: string; timestamp: string }[];
   setPendingAccessRequests: React.Dispatch<React.SetStateAction<{ id: string; name: string; username: string; timestamp: string }[]>>;
@@ -63,7 +63,7 @@ interface AppContextProps {
   approveComment: (id: string) => void;
   rejectComment: (id: string) => void;
   
-  addCollaborator: (name: string, phone: string, user: string, pass: string) => void;
+  addCollaborator: (name: string, phone: string, user: string, pass: string, esAdmin?: boolean) => void;
   deleteCollaborator: (id: string) => void;
   editCollaborator: (collab: Collaborator) => void;
   
@@ -244,7 +244,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Create Collaborator
-  const addCollaborator = (name: string, phone: string, user: string, pass: string) => {
+  const addCollaborator = (name: string, phone: string, user: string, pass: string, esAdmin?: boolean) => {
     const id = `collab-${Date.now()}`;
     const newCollab: Collaborator = {
       id,
@@ -252,6 +252,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       phone,
       username: user.toLowerCase().trim(),
       password: pass,
+      esAdmin: !!esAdmin,
       avatarUrl: `https://images.unsplash.com/photo-${1500000000000 + Math.floor(Math.random() * 999999)}?auto=format&fit=crop&q=80&w=150`,
       status: 'approved',
       biometricsEnabled: false,
@@ -499,7 +500,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { ok: true };
   };
 
-  const loginColab = async (codigo: string, usuario: string, pass: string): Promise<{ ok: boolean; msg?: string }> => {
+  const loginColab = async (codigo: string, usuario: string, pass: string): Promise<{ ok: boolean; msg?: string; collab?: any }> => {
     codigo = (codigo || '').trim().toUpperCase();
     const lic = await validarLicencia(codigo);
     if (!lic) return { ok: false, msg: 'Licencia inválida.' };
@@ -509,7 +510,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem('bella_codigo', codigo);
     const d = await cloudLoad(codigo);
     if (d) hydrate(d);
-    return { ok: true };
+    // Buscamos el colaborador en los datos de la nube (no en el estado local,
+    // que en el dispositivo del colaborador todavía está vacío/con demos).
+    const dd = d as any;
+    const collab = (dd?.collaborators || []).find(
+      (c: any) => (c.username || '').toLowerCase() === (usuario || '').toLowerCase().trim()
+    );
+    return { ok: true, collab };
   };
 
   const logout = () => {
