@@ -523,7 +523,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     if (!licenseCode || !currentUser || hydratingRef.current) return;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(() => { cloudSave(licenseCode, snapshot()); }, 1200);
+    saveTimerRef.current = setTimeout(async () => {
+      // Guardado NO destructivo: antes de subir, traemos lo último de la nube y
+      // sumamos lo que no tenemos (turnos/pedidos/opiniones que entraron desde la
+      // página pública mientras el panel estaba abierto). Si no, los pisaríamos.
+      const snap = snapshot() as any;
+      try {
+        const remoto = (await cloudLoad(licenseCode)) as any;
+        if (remoto) {
+          if (Array.isArray(remoto.appointments)) {
+            const ids = new Set((snap.appointments || []).map((a: any) => a.id));
+            const faltantes = remoto.appointments.filter((a: any) => !ids.has(a.id));
+            if (faltantes.length) {
+              snap.appointments = [...faltantes, ...(snap.appointments || [])];
+              hydratingRef.current = true;
+              setAppointments(snap.appointments);
+              setTimeout(() => { hydratingRef.current = false; }, 300);
+            }
+          }
+          if (Array.isArray(remoto.comments)) {
+            const ids = new Set((snap.comments || []).map((c: any) => c.id));
+            const faltantes = remoto.comments.filter((c: any) => !ids.has(c.id));
+            if (faltantes.length) {
+              snap.comments = [...faltantes, ...(snap.comments || [])];
+              hydratingRef.current = true;
+              setComments(snap.comments);
+              setTimeout(() => { hydratingRef.current = false; }, 300);
+            }
+          }
+        }
+      } catch (e) { /* si falla la lectura, guardamos igual lo local */ }
+      cloudSave(licenseCode, snap);
+    }, 1200);
     return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current); };
   }, [tenants, services, products, collaborators, appointments, comments, salesHistory, categories, phonePrefix, biometricsEnabledUsers, licenseCode, currentUser]);
 
