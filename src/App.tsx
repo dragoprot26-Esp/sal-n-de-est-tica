@@ -3,84 +3,85 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
+import React, { useState, useEffect } from "react";
+import { PizzaProvider, usePizza } from "./context/PizzaContext";
+import { CustomerView } from "./components/CustomerView";
+import { AdminView } from "./components/AdminView";
+import { Bell, Info, Shield, ShoppingBag, X } from "lucide-react";
 
-import React, { useState } from 'react';
-import { AppProvider, useApp } from './context/AppContext';
-import { PublicPage } from './components/PublicPage';
-import { AdminDashboard } from './components/AdminDashboard';
-import { CollaboratorDashboard } from './components/CollaboratorDashboard';
-import { LoginModal } from './components/LoginModal';
-import { ArrowLeft, Home, Sparkles } from 'lucide-react';
-
-function MaintenanceScreen() {
-  return (
-    <div className="min-h-screen flex items-center justify-center p-6" style={{ background: '#2D2926', color: '#FAF9F6', fontFamily: 'serif' }}>
-      <div className="max-w-md w-full text-center rounded-3xl p-10 border" style={{ background: '#3a352f', borderColor: 'rgba(255,255,255,0.12)' }}>
-        <div className="text-5xl mb-4">🌸</div>
-        <h1 className="text-2xl font-medium italic mb-3">En Mantenimiento</h1>
-        <p className="text-sm leading-relaxed" style={{ color: '#d9d4cb' }}>
-          Estamos trabajando para brindarte una mejor experiencia. Nuestra página vuelve muy pronto.
-          <br /><br />¡Gracias por tu paciencia! Saludos cordiales. 🌸
-        </p>
-        <div className="mt-6 h-1 w-16 rounded-full mx-auto" style={{ background: '#5A5A40' }}></div>
-      </div>
+const MaintenanceScreen: React.FC = () => (
+  <div className="min-h-screen flex items-center justify-center p-6 bg-[#0a0a0a] text-gray-100 font-sans">
+    <div className="max-w-md w-full text-center bg-[#151515] border border-white/10 rounded-3xl p-8 shadow-2xl">
+      <div className="text-5xl mb-4">🛠️</div>
+      <h1 className="text-2xl font-black tracking-tight mb-2">En Mantenimiento</h1>
+      <p className="text-sm text-gray-400 leading-relaxed">
+        Estamos trabajando para brindarte una mejor experiencia. La página vuelve muy pronto.
+        <br /><br />¡Gracias por tu paciencia! Saludos cordiales. 🙌
+      </p>
+      <div className="mt-6 h-1 w-16 bg-red-600 rounded-full mx-auto"></div>
     </div>
-  );
-}
+  </div>
+);
 
-function AppContent() {
-  const { currentUser, bloqueada, publicCode } = useApp();
-  const [loginOpen, setLoginOpen] = useState(false);
+const MainApp: React.FC = () => {
+  const [viewMode, setViewMode] = useState<"customer" | "admin">("customer");
+  const { notifications, currentTheme, bloqueada, publicCode } = usePizza();
+  const [activeNotification, setActiveNotification] = useState<any>(null);
 
-  // Kill switch: visitante en una pública bloqueada → cartel "En Mantenimiento".
-  if (bloqueada && publicCode && !currentUser) {
+  useEffect(() => {
+    if (notifications.length > 0) {
+      setActiveNotification(notifications[0]);
+      const timer = setTimeout(() => {
+        setActiveNotification(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notifications]);
+
+  // Kill switch: si el dueño bloqueó la pública, el visitante ve "En Mantenimiento".
+  // (Va DESPUÉS de todos los hooks: React no permite retornar antes de ejecutarlos.)
+  if (bloqueada && publicCode) {
     return <MaintenanceScreen />;
   }
 
-  // If a session is active, render their dashboard
-  if (currentUser) {
-    if (currentUser.role === 'admin') {
-      return (
-        <div className="relative">
-          {/* Quick Floating Back Button to jump back to public storefront */}
-          <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
-            <a
-              href="/"
-              onClick={(e) => {
-                e.preventDefault();
-                // We don't log out, we just let them view public storefront while keeping session active if they want,
-                // or we can simulate jumping back easily by offering a clear indicator.
-                // Let's keep it simple: the dashboard has a "Volver al Sitio Público" or logout button, which handles it.
-              }}
-            >
-            </a>
-          </div>
-          <AdminDashboard />
-        </div>
-      );
-    } else {
-      return <CollaboratorDashboard />;
-    }
-  }
-
-  // Otherwise render the Gorgeous Public Aesthetics Storefront
   return (
-    <>
-      <PublicPage onOpenLogin={() => setLoginOpen(true)} />
-      <LoginModal isOpen={loginOpen} onClose={() => setLoginOpen(false)} />
-    </>
+    <div className={`relative min-h-screen ${currentTheme.bg} selection:bg-red-600 selection:text-white`}>
+      
+      {/* RENDER ACTIVE SCREEN */}
+      {viewMode === "customer" ? (
+        <CustomerView onOpenAdmin={() => setViewMode("admin")} />
+      ) : (
+        <AdminView onCloseAdmin={() => setViewMode("customer")} />
+      )}
+
+      {/* Floating Interactive Toast (For instant PWA system alert feedback) */}
+      {activeNotification && (
+        <div className="fixed bottom-6 right-6 z-50 max-w-sm w-full bg-neutral-950/95 backdrop-blur-md border border-white/10 p-4 rounded-2xl shadow-2xl flex items-start gap-3 animate-slide-up font-sans">
+          <div className="p-2 bg-red-600/20 text-red-500 rounded-xl shrink-0">
+            <Bell className="w-5 h-5 animate-bounce" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-black text-white">{activeNotification.title}</p>
+            <p className="text-[11px] text-gray-400 mt-0.5 leading-snug">{activeNotification.message}</p>
+            <span className="text-[9px] text-gray-600 uppercase font-black tracking-wider block mt-2">PWA Push System • {activeNotification.timestamp}</span>
+          </div>
+          <button 
+            onClick={() => setActiveNotification(null)}
+            className="text-gray-500 hover:text-white transition-colors cursor-pointer self-start p-1"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
+    </div>
   );
-}
+};
 
 export default function App() {
   return (
-    <AppProvider>
-      <AppContent />
-    </AppProvider>
+    <PizzaProvider>
+      <MainApp />
+    </PizzaProvider>
   );
 }
-
