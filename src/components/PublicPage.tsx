@@ -234,25 +234,8 @@ export const PublicPage: React.FC<PublicPageProps> = ({ onOpenLogin }) => {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Multi-Tenant Switcher */}
-            <div className="relative">
-              <select
-                id="tenant_select_dropdown"
-                value={activeTenant.id}
-                onChange={(e) => {
-                  const target = tenants.find(t => t.id === e.target.value);
-                  if (target) setActiveTenant(target);
-                }}
-                className="appearance-none bg-white border border-artistic-border rounded-full px-4 py-1.5 pr-9 text-xs font-medium uppercase tracking-wider text-artistic-dark focus:outline-none focus:border-artistic-sage cursor-pointer"
-              >
-                {tenants.map(t => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
-                ))}
-              </select>
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-artistic-muted">
-                <ChevronRight className="w-3.5 h-3.5 rotate-90" />
-              </div>
-            </div>
+            {/* El selector de salón se movió al Panel Admin → Tema de Página
+                (el cliente no debe poder cambiar de local desde la vidriera). */}
 
             {/* Language Switcher */}
             <button

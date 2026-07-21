@@ -14,7 +14,7 @@ import {
   BarChart, Calendar, Settings, ShieldAlert, Check, X, 
   Trash2, Plus, Download, Upload, LogOut, Phone, Users, 
   PlusCircle, Edit2, Lock, Save, ListFilter, Globe, Database, QrCode, Palette, RefreshCw,
-  Moon, Sun, Image
+  Moon, Sun, Image, CalendarDays
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -52,11 +52,17 @@ export const AdminDashboard: React.FC = () => {
     updateTenantTheme,
     updateTenantDetails,
     categories,
-    setCategories
+    setCategories,
+    licenseCode
   } = useApp();
 
+  // Link público real del inquilino (el que debe llevar el QR).
+  const publicUrl = licenseCode
+    ? `${window.location.origin}/?codigo=${licenseCode}`
+    : window.location.origin;
+
   // Active section inside dashboard
-  const [activeTab, setActiveTab] = useState<'sales' | 'collabs' | 'services' | 'products' | 'reviews' | 'backups' | 'theme' | 'adminTheme'>('sales');
+  const [activeTab, setActiveTab] = useState<'sales' | 'turnos' | 'collabs' | 'services' | 'products' | 'reviews' | 'backups' | 'theme' | 'adminTheme'>('sales');
 
   // Admin Panel Theme state
   const [adminTheme, setAdminThemeState] = useState<'light' | 'medium' | 'dark'>(() => {
@@ -83,7 +89,7 @@ export const AdminDashboard: React.FC = () => {
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
 
   useEffect(() => {
-    const currentUrl = window.location.origin; // Public origin URL of the Salon
+    const currentUrl = publicUrl; // Link público REAL del inquilino (con ?codigo=)
     QRCode.toDataURL(currentUrl, {
       width: 320,
       margin: 2,
@@ -94,7 +100,7 @@ export const AdminDashboard: React.FC = () => {
     })
     .then(url => setQrDataUrl(url))
     .catch(err => console.error('Error generating base64 QR:', err));
-  }, []);
+  }, [publicUrl]);  // se regenera cuando ya tenemos el código del inquilino
 
   // New item modal/form states
   const [newServiceNameEs, setNewServiceNameEs] = useState('');
@@ -305,8 +311,7 @@ export const AdminDashboard: React.FC = () => {
 
   // Download Salon QR PDF
   const handleQrDownload = async () => {
-    const currentUrl = window.location.href;
-    await downloadSalonQrPdf(currentUrl, activeTenant.name);
+    await downloadSalonQrPdf(publicUrl, activeTenant.name);
     triggerToast(language === 'es' ? '¡PDF del QR generado con éxito!' : 'QR PDF generated successfully!');
   };
 
@@ -442,6 +447,21 @@ export const AdminDashboard: React.FC = () => {
             >
               <BarChart className="w-4 h-4" />
               {getTranslation(language, 'statsTitle')}
+            </button>
+            <button
+              id="tab_turnos_btn"
+              onClick={() => setActiveTab('turnos')}
+              className={`w-full text-left px-4 py-2.5 rounded-full text-xs font-semibold flex items-center gap-2.5 transition-all ${
+                activeTab === 'turnos' ? 'bg-artistic-sage text-white shadow-sm font-bold' : 'text-artistic-muted hover:bg-artistic-cream hover:text-artistic-dark'
+              }`}
+            >
+              <CalendarDays className="w-4 h-4" />
+              {language === 'es' ? 'Turnos Reservados' : 'Booked Appointments'}
+              {appointments.filter(a => a.status === 'pending').length > 0 && (
+                <span className="ml-auto bg-artistic-sage text-white font-bold px-2 py-0.5 rounded-full text-[9px]">
+                  {appointments.filter(a => a.status === 'pending').length}
+                </span>
+              )}
             </button>
             <button
               id="tab_collabs_btn"
@@ -710,6 +730,106 @@ export const AdminDashboard: React.FC = () => {
         )}
 
         {/* Tab 2: Collaborators directory */}
+        {activeTab === 'turnos' && (
+          <div className="space-y-5">
+            <div>
+              <h2 className="text-2xl font-serif italic font-medium text-artistic-dark">
+                {language === 'es' ? 'Turnos Reservados' : 'Booked Appointments'}
+              </h2>
+              <p className="text-xs text-artistic-muted mt-1">
+                {language === 'es'
+                  ? 'Reservas que hicieron tus clientas desde la página pública.'
+                  : 'Bookings made by your clients from the public page.'}
+              </p>
+            </div>
+
+            {appointments.length === 0 ? (
+              <div className="p-10 text-center bg-white border border-artistic-border rounded-2xl">
+                <CalendarDays className="w-10 h-10 text-artistic-muted mx-auto mb-3" />
+                <p className="text-sm font-semibold text-artistic-dark">
+                  {language === 'es' ? 'Todavía no hay turnos reservados' : 'No appointments yet'}
+                </p>
+                <p className="text-xs text-artistic-muted mt-1">
+                  {language === 'es'
+                    ? 'Cuando una clienta reserve desde la página pública, va a aparecer acá.'
+                    : 'When a client books from the public page, it will show up here.'}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {[...appointments]
+                  .sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time))
+                  .map(appt => {
+                    const serv = services.find(s => s.id === appt.serviceId);
+                    const colab = collaborators.find(c => c.id === appt.collaboratorId);
+                    const estadoStyle =
+                      appt.status === 'completed' ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        : appt.status === 'cancelled' ? 'bg-red-50 text-red-700 border-red-200'
+                        : 'bg-amber-50 text-amber-700 border-amber-200';
+                    const estadoLabel =
+                      appt.status === 'completed' ? (language === 'es' ? 'Atendido' : 'Completed')
+                        : appt.status === 'cancelled' ? (language === 'es' ? 'Cancelado' : 'Cancelled')
+                        : (language === 'es' ? 'Pendiente' : 'Pending');
+                    return (
+                      <div key={appt.id} className="bg-white border border-artistic-border rounded-2xl p-4 flex flex-col md:flex-row md:items-center gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-semibold text-sm text-artistic-dark">{appt.clientName}</span>
+                            <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${estadoStyle}`}>
+                              {estadoLabel}
+                            </span>
+                          </div>
+                          <p className="text-xs text-artistic-muted mt-1">
+                            💅 {serv ? (language === 'es' ? serv.nameEs : serv.nameEn) : (language === 'es' ? 'Servicio' : 'Service')}
+                            {colab ? ` · 👤 ${colab.name}` : ''}
+                          </p>
+                          <p className="text-xs text-artistic-muted mt-0.5">
+                            📅 {appt.date} · 🕒 {appt.time} · 💵 ${appt.price}
+                          </p>
+                          {appt.clientPhone && (
+                            <a
+                              href={`https://wa.me/${String(appt.clientPhone).replace(/\D/g, '')}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 hover:text-emerald-700 mt-1.5"
+                            >
+                              📱 {appt.clientPhone}
+                            </a>
+                          )}
+                        </div>
+                        <div className="flex gap-2 shrink-0">
+                          {appt.status !== 'completed' && (
+                            <button
+                              onClick={() => {
+                                setAppointments(prev => prev.map(a => a.id === appt.id ? { ...a, status: 'completed' } : a));
+                                triggerToast(language === 'es' ? '✅ Turno marcado como atendido' : '✅ Marked as completed');
+                              }}
+                              className="px-3 py-1.5 text-[11px] font-bold rounded-full bg-artistic-sage text-white hover:bg-artistic-dark transition-colors cursor-pointer"
+                            >
+                              {language === 'es' ? 'Atendido' : 'Complete'}
+                            </button>
+                          )}
+                          {appt.status !== 'cancelled' && (
+                            <button
+                              onClick={() => {
+                                if (!confirm(language === 'es' ? '¿Cancelar este turno?' : 'Cancel this appointment?')) return;
+                                setAppointments(prev => prev.map(a => a.id === appt.id ? { ...a, status: 'cancelled' } : a));
+                                triggerToast(language === 'es' ? 'Turno cancelado' : 'Appointment cancelled');
+                              }}
+                              className="px-3 py-1.5 text-[11px] font-bold rounded-full border border-artistic-border text-artistic-muted hover:text-red-600 hover:border-red-300 transition-colors cursor-pointer"
+                            >
+                              {language === 'es' ? 'Cancelar' : 'Cancel'}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            )}
+          </div>
+        )}
+
         {activeTab === 'collabs' && (
           <div className="space-y-6">
             <div className="flex items-center justify-between border-b border-artistic-border pb-6">
@@ -1681,6 +1801,38 @@ export const AdminDashboard: React.FC = () => {
         {/* Tab 7: Theme Customization Tab */}
         {activeTab === 'theme' && (
           <div className="space-y-6">
+            {/* Selector de salón (movido desde la página pública: solo el admin puede cambiarlo) */}
+            {tenants.length > 1 && (
+              <div className="bg-artistic-cream/60 border border-artistic-border rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                <div className="flex-1">
+                  <p className="text-xs font-bold uppercase tracking-wider text-artistic-dark">
+                    {language === 'es' ? 'Salón activo' : 'Active salon'}
+                  </p>
+                  <p className="text-[11px] text-artistic-muted mt-0.5">
+                    {language === 'es'
+                      ? 'Elegí sobre qué salón estás trabajando. (Antes estaba en la página pública.)'
+                      : 'Choose which salon you are working on.'}
+                  </p>
+                </div>
+                <div className="relative shrink-0">
+                  <select
+                    id="tenant_select_dropdown_admin"
+                    value={activeTenant.id}
+                    onChange={(e) => {
+                      const target = tenants.find(t => t.id === e.target.value);
+                      if (target) setActiveTenant(target);
+                    }}
+                    className="appearance-none bg-white border border-artistic-border rounded-full px-4 py-2 pr-9 text-xs font-semibold uppercase tracking-wider text-artistic-dark focus:outline-none focus:border-artistic-sage cursor-pointer"
+                  >
+                    {tenants.map(t => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                  </select>
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-artistic-muted">▾</div>
+                </div>
+              </div>
+            )}
+
             <div className="border-b border-artistic-border pb-6 flex items-center justify-between">
               <div>
                 <h3 className="text-2xl font-serif font-medium italic tracking-tight text-artistic-dark">
