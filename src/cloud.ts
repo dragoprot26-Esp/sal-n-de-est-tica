@@ -225,3 +225,25 @@ export async function bellaVersion(codigo: string): Promise<string> {
   try { const r = await rpc('bella_version', { p_codigo: codigo }, false); return typeof r === 'string' ? r : String(r || ''); }
   catch (e) { return ''; }
 }
+
+// ── Aprobación de colaboradores por la nube (cross-dispositivo) ────────
+// El colaborador deja su pedido; el dueño lo aprueba/rechaza desde el panel.
+export async function solicitarAcceso(codigo: string, usuario: string, nombre?: string): Promise<void> {
+  try { await rpc('cyc_solicitar_acceso', { p_codigo: codigo, p_usuario: usuario, p_nombre: nombre || null }, false); }
+  catch (e) { /* noop */ }
+}
+
+export async function estadoAcceso(codigo: string, usuario: string): Promise<string> {
+  try { const r = await rpc('cyc_estado_acceso', { p_codigo: codigo, p_usuario: usuario }, false); return typeof r === 'string' ? r : String(r || 'ninguno'); }
+  catch (e) { return 'ninguno'; }
+}
+
+export async function listarSolicitudes(codigo: string): Promise<{ usuario: string; nombre?: string; creado?: string }[]> {
+  try { const r = await rpc('cyc_listar_solicitudes', { p_codigo: codigo }, false); return Array.isArray(r) ? r : []; }
+  catch (e) { return []; }
+}
+
+export async function resolverAcceso(codigo: string, usuario: string, aprobar: boolean): Promise<void> {
+  try { await rpc('cyc_resolver_acceso', { p_codigo: codigo, p_usuario: usuario, p_aprobar: aprobar }, false); }
+  catch (e) { /* noop */ }
+}
