@@ -565,6 +565,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (dd.tenants) { setTenants(dd.tenants); if (dd.tenants[0]) setActiveTenantState(dd.tenants[0]); }
       if (dd.services) setServices(dd.services);
       if (dd.products) setProducts(dd.products);
+      if (dd.collaborators) setCollaborators(dd.collaborators);  // profesionales para el selector de reserva
       if (dd.comments) setComments(dd.comments);
       setTimeout(() => { hydratingRef.current = false; }, 300);
     };
@@ -604,6 +605,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const nuevos = dd.comments.filter((c: any) => !ids.has(c.id));
           return nuevos.length ? [...nuevos, ...prev] : prev;
         });
+      }
+      // Catálogo (servicios/productos): refrescamos para que el colaborador vea
+      // lo último que cargó el dueño. Solo si cambió la cantidad o el contenido.
+      if (Array.isArray(dd.services)) {
+        setServices((prev: any[]) => JSON.stringify(prev) !== JSON.stringify(dd.services) ? dd.services : prev);
+      }
+      if (Array.isArray(dd.products)) {
+        setProducts((prev: any[]) => JSON.stringify(prev) !== JSON.stringify(dd.products) ? dd.products : prev);
       }
       setTimeout(() => { hydratingRef.current = false; }, 300);
     }, 30000);
