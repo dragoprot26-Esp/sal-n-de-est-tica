@@ -8,7 +8,8 @@ import * as XLSX from 'xlsx';
 import {
   validarLicencia, asegurarCuentaSeguraDueno, asegurarCuentaSeguraColab,
   cloudLoad, cloudSave, signOutGlobal, estaLogueado,
-  bellaPublica, bellaAgregarTurno, bellaAgregarResena, bellaVersion, CloudData
+  bellaPublica, bellaAgregarTurno, bellaAgregarResena, bellaVersion, CloudData,
+  solicitarAcceso, estadoAcceso, listarSolicitudes, resolverAcceso
 } from '../cloud';
 import {
   Language, Tenant, Service, Product, Collaborator,
@@ -67,7 +68,7 @@ interface AppContextProps {
   deleteCollaborator: (id: string) => void;
   editCollaborator: (collab: Collaborator) => void;
   
-  requestCollaboratorAccess: (username: string) => Promise<boolean>;
+  requestCollaboratorAccess: (username: string, nombre?: string) => Promise<boolean>;
   approveAccessRequest: (reqId: string) => void;
   denyAccessRequest: (reqId: string) => void;
   
@@ -272,66 +273,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCollaborators(prev => prev.map(c => c.id === updated.id ? updated : c));
   };
 
-  // Collaborator Authorization Request Flow
-  const requestCollaboratorAccess = (username: string): Promise<boolean> => {
-    return new Promise((resolve) => {
-      const collab = collaborators.find(c => c.username === username.toLowerCase().trim());
-      if (!collab) {
-        resolve(false);
-        return;
-      }
-
-      // Add to pending authorization requests
-      const requestId = `req-${Date.now()}`;
-      const newRequest = {
-        id: requestId,
-        name: collab.name,
-        username: collab.username,
-        timestamp: new Date().toLocaleTimeString()
-      };
-
-      setPendingAccessRequests(prev => [...prev, newRequest]);
-
-      // We will poll/check periodically if the admin accepts this request.
-      // For high fidelity simulation, let's keep track of request status via state.
-      // When the admin authorizes or denies, we resolve the promise.
-      // We will check every 500ms if the request is still in pendingAccessRequests.
-      // If it is removed and the collaborator gets set to 'approved', we resolve true.
-      // If it is denied, we resolve false.
-      const interval = setInterval(() => {
-        setPendingAccessRequests(currentRequests => {
-          const exists = currentRequests.find(r => r.id === requestId);
-          if (!exists) {
-            clearInterval(interval);
-            // Check if user is approved
-            setCollaborators(latestCollabs => {
-              const currentStatus = latestCollabs.find(c => c.username === collab.username)?.status;
-              if (currentStatus === 'approved') {
-                resolve(true);
-              } else {
-                resolve(false);
-              }
-              return latestCollabs;
-            });
-          }
-          return currentRequests;
-        });
-      }, 500);
-
-      // Timeout after 45 seconds to prevent memory hanging
-      setTimeout(() => {
-        clearInterval(interval);
-        resolve(false);
-      }, 45000);
+  // Collaborator Authorization Request Flow (por la NUBE, cross-dispositivo)
+  // El colaborador deja su pedido en la nube y consulta su estado cada 3s.
+  // El dueño lo ve en su panel (desde cualquier dispositivo) y lo aprueba.
+  const requestCollaboratorAccess = (username: string, nombre?: string): Promise<boolean> => {
+    const cod = publicCode || licenseCode;
+    const user = username.toLowerCase().trim();
+    if (!cod) return Promise.resolve(false);
+    return new Promise(async (resolve) => {
+      let terminado = false;
+      const finish = (v: boolean) => { if (!terminado) { terminado = true; resolve(v); } };
+      // 1) Dejar el pedido en la nube (queda 'pendiente').
+      await solicitarAcceso(cod, user, nombre);
+      // 2) Consultar el estado cada 3 segundos.
+      const interval = setInterval(async () => {
+        const est = await estadoAcceso(cod, user);
+        if (est === 'aprobado') { clearInterval(interval); finish(true); }
+        else if (est === 'rechazado') { clearInterval(interval); finish(false); }
+      }, 3000);
+      // 3) Cortar a los 3 minutos por las dudas (queda pendiente para reintentar).
+      setTimeout(() => { clearInterval(interval); finish(false); }, 180000);
     });
   };
 
+  // El dueño APRUEBA (desde el panel, resuelve la solicitud en la nube).
   const approveAccessRequest = (reqId: string) => {
     const req = pendingAccessRequests.find(r => r.id === reqId);
     if (req) {
-      // Mark collaborator approved
+      const cod = licenseCode || publicCode;
+      if (cod) resolverAcceso(cod, req.username, true);
       setCollaborators(prev => prev.map(c => c.username === req.username ? { ...c, status: 'approved' } : c));
-      // Remove from requests list
       setPendingAccessRequests(prev => prev.filter(r => r.id !== reqId));
     }
   };
@@ -339,6 +310,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const denyAccessRequest = (reqId: string) => {
     const req = pendingAccessRequests.find(r => r.id === reqId);
     if (req) {
+      const cod = licenseCode || publicCode;
+      if (cod) resolverAcceso(cod, req.username, false);
       setCollaborators(prev => prev.map(c => c.username === req.username ? { ...c, status: 'rejected' } : c));
       setPendingAccessRequests(prev => prev.filter(r => r.id !== reqId));
     }
@@ -635,6 +608,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setTimeout(() => { hydratingRef.current = false; }, 300);
     }, 30000);
     return () => clearInterval(iv);
+  }, [licenseCode, currentUser]);
+
+  // El PANEL del dueño sondea las solicitudes de acceso pendientes en la nube.
+  // Así ve el pedido del colaborador aunque haya entrado desde otro celular.
+  useEffect(() => {
+    if (!licenseCode || !currentUser || currentUser.role !== 'admin') return;
+    let cancelado = false;
+    const traer = async () => {
+      const pend = await listarSolicitudes(licenseCode);
+      if (cancelado) return;
+      setPendingAccessRequests(pend.map((s) => ({
+        id: s.usuario,
+        username: s.usuario,
+        name: s.nombre || s.usuario,
+        timestamp: s.creado || ''
+      })));
+    };
+    traer();
+    const iv = setInterval(traer, 4000);
+    return () => { cancelado = true; clearInterval(iv); };
   }, [licenseCode, currentUser]);
 
   return (
