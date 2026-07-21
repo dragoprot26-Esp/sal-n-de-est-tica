@@ -81,6 +81,10 @@ export interface Appointment {
   clientPhone: string;
   status: 'pending' | 'completed' | 'cancelled';
   price: number; // captured at booking
+  // Tipo de reserva: 'servicio' (turno con profesional) o 'retiro' (pedido de productos)
+  tipo?: 'servicio' | 'retiro';
+  // Solo para pedidos de retiro: qué productos encargó la clienta
+  items?: { productId: string; nameEs: string; nameEn: string; price: number; qty: number }[];
 }
 
 export interface Comment {
