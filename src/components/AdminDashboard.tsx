@@ -779,10 +779,24 @@ export const AdminDashboard: React.FC = () => {
                               {estadoLabel}
                             </span>
                           </div>
-                          <p className="text-xs text-artistic-muted mt-1">
-                            💅 {serv ? (language === 'es' ? serv.nameEs : serv.nameEn) : (language === 'es' ? 'Servicio' : 'Service')}
-                            {colab ? ` · 👤 ${colab.name}` : ''}
-                          </p>
+                          {(appt as any).tipo === 'retiro' ? (
+                            <div className="mt-1.5 bg-artistic-cream/50 border border-artistic-border rounded-xl p-2">
+                              <p className="text-[10px] font-bold uppercase tracking-wider text-artistic-sage mb-1">
+                                🧺 {language === 'es' ? 'Pedido para retirar' : 'Pickup order'}
+                              </p>
+                              {((appt as any).items || []).map((it: any) => (
+                                <p key={it.productId} className="text-xs text-artistic-dark">
+                                  {it.qty}× {language === 'es' ? it.nameEs : it.nameEn}
+                                  <span className="text-artistic-muted"> — ${(it.price * it.qty).toLocaleString('es-AR')}</span>
+                                </p>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-artistic-muted mt-1">
+                              💅 {serv ? (language === 'es' ? serv.nameEs : serv.nameEn) : (language === 'es' ? 'Servicio' : 'Service')}
+                              {colab ? ` · 👤 ${colab.name}` : ''}
+                            </p>
+                          )}
                           <p className="text-xs text-artistic-muted mt-0.5">
                             📅 {appt.date} · 🕒 {appt.time} · 💵 ${appt.price}
                           </p>

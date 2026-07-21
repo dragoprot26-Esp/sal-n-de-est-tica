@@ -6,9 +6,10 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { getTranslation } from '../utils/i18n';
-import { 
-  Calendar, Clock, Sparkles, ShoppingBag, MessageSquare, 
-  Share2, MapPin, Star, ChevronRight, User, Phone, Globe, Check, X, Copy
+import { Product } from '../types';
+import {
+  Calendar, Clock, Sparkles, ShoppingBag, MessageSquare,
+  Share2, MapPin, Star, ChevronRight, User, Phone, Globe, Check, X, Copy, Plus, Minus, Trash2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -42,6 +43,12 @@ export const PublicPage: React.FC<PublicPageProps> = ({ onOpenLogin }) => {
   const [clientPhone, setClientPhone] = useState('');
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+
+  // Canasto de productos + turno de retiro
+  const [canasto, setCanasto] = useState<{ productId: string; nameEs: string; nameEn: string; price: number; qty: number }[]>([]);
+  const [isCanastoOpen, setIsCanastoOpen] = useState(false);
+  const [retiroFecha, setRetiroFecha] = useState('');
+  const [retiroHora, setRetiroHora] = useState('');
 
   // Review states
   const [reviewName, setReviewName] = useState('');
@@ -95,8 +102,69 @@ export const PublicPage: React.FC<PublicPageProps> = ({ onOpenLogin }) => {
     setClientPhone('');
   };
 
-  const handleProductReservation = (productId: string, productName: string) => {
-    showToast(getTranslation(language, 'productReservedSuccess') + ` (${productName})`, 'success');
+  // ── CANASTO DE PRODUCTOS (pedido con turno de retiro) ───────────────
+  const agregarAlCanasto = (product: Product) => {
+    setCanasto(prev => {
+      const existe = prev.find(i => i.productId === product.id);
+      if (existe) return prev.map(i => i.productId === product.id ? { ...i, qty: i.qty + 1 } : i);
+      return [...prev, {
+        productId: product.id,
+        nameEs: product.nameEs,
+        nameEn: product.nameEn,
+        price: product.price,
+        qty: 1
+      }];
+    });
+    showToast(language === 'es' ? '🧺 Agregado al canasto' : '🧺 Added to basket', 'success');
+  };
+
+  const cambiarCantidad = (productId: string, delta: number) => {
+    setCanasto(prev => prev
+      .map(i => i.productId === productId ? { ...i, qty: i.qty + delta } : i)
+      .filter(i => i.qty > 0));
+  };
+
+  const totalCanasto = canasto.reduce((acc, i) => acc + i.price * i.qty, 0);
+  const unidadesCanasto = canasto.reduce((acc, i) => acc + i.qty, 0);
+
+  const handleConfirmarRetiro = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!canasto.length) return;
+    if (!retiroFecha || !retiroHora || !clientName || !clientPhone) {
+      showToast(getTranslation(language, 'requiredFields'), 'error');
+      return;
+    }
+    if (clientPhone.length < 6) {
+      showToast(getTranslation(language, 'invalidPhone'), 'error');
+      return;
+    }
+
+    // El pedido se guarda como un turno de RETIRO (va a la nube y al panel).
+    addAppointment({
+      tenantId: activeTenant.id,
+      serviceId: '',
+      collaboratorId: '',
+      date: retiroFecha,
+      time: retiroHora,
+      clientName,
+      clientPhone: `${phonePrefix} ${clientPhone}`,
+      price: totalCanasto,
+      tipo: 'retiro',
+      items: canasto
+    } as any);
+
+    showToast(
+      language === 'es'
+        ? '✅ ¡Pedido confirmado! Te esperamos para el retiro.'
+        : '✅ Order confirmed! See you at pickup time.',
+      'success'
+    );
+    setCanasto([]);
+    setIsCanastoOpen(false);
+    setRetiroFecha('');
+    setRetiroHora('');
+    setClientName('');
+    setClientPhone('');
   };
 
   const handleSendComment = (e: React.FormEvent) => {
@@ -450,11 +518,11 @@ export const PublicPage: React.FC<PublicPageProps> = ({ onOpenLogin }) => {
                 </div>
                 <button
                   id={`reserve_product_${product.id}`}
-                  onClick={() => handleProductReservation(product.id, language === 'es' ? product.nameEs : product.nameEn)}
-                  className="px-5 py-2.5 bg-artistic-dark hover:bg-artistic-sage text-white rounded-full text-[10px] font-semibold uppercase tracking-widest transition-all flex items-center gap-1.5"
+                  onClick={() => agregarAlCanasto(product)}
+                  className="px-5 py-2.5 bg-artistic-dark hover:bg-artistic-sage text-white rounded-full text-[10px] font-semibold uppercase tracking-widest transition-all flex items-center gap-1.5 cursor-pointer"
                 >
                   <ShoppingBag className="w-3.5 h-3.5" />
-                  {getTranslation(language, 'reserveProduct')}
+                  {language === 'es' ? 'Agregar' : 'Add'}
                 </button>
               </div>
             </div>
@@ -915,6 +983,177 @@ export const PublicPage: React.FC<PublicPageProps> = ({ onOpenLogin }) => {
                 </div>
               </motion.div>
             </div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ── CANASTO: botón flotante ── */}
+      {canasto.length > 0 && !isCanastoOpen && (
+        <button
+          id="open_canasto_btn"
+          onClick={() => setIsCanastoOpen(true)}
+          className="fixed bottom-6 right-6 z-40 bg-artistic-sage hover:bg-artistic-dark text-white rounded-full shadow-2xl px-5 py-4 flex items-center gap-3 transition-all cursor-pointer"
+        >
+          <ShoppingBag className="w-5 h-5" />
+          <span className="text-sm font-semibold">
+            {unidadesCanasto} {language === 'es' ? (unidadesCanasto === 1 ? 'producto' : 'productos') : 'items'}
+          </span>
+          <span className="bg-white/20 rounded-full px-2 py-0.5 text-xs font-bold">
+            ${totalCanasto.toLocaleString('es-AR')}
+          </span>
+        </button>
+      )}
+
+      {/* ── CANASTO: modal con turno de retiro ── */}
+      <AnimatePresence>
+        {isCanastoOpen && (
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 30 }}
+              className="bg-white w-full sm:max-w-lg sm:rounded-3xl rounded-t-3xl max-h-[92vh] overflow-y-auto border border-artistic-border shadow-2xl"
+            >
+              {/* Encabezado */}
+              <div className="sticky top-0 bg-white border-b border-artistic-border px-6 py-4 flex items-center justify-between">
+                <div>
+                  <h3 className="font-serif italic font-medium text-xl text-artistic-dark">
+                    {language === 'es' ? 'Tu canasto' : 'Your basket'}
+                  </h3>
+                  <p className="text-[11px] text-artistic-muted">
+                    {language === 'es' ? 'Elegí día y hora para retirarlo' : 'Choose pickup date and time'}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setIsCanastoOpen(false)}
+                  className="p-2 rounded-full hover:bg-artistic-cream text-artistic-muted hover:text-artistic-dark cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-5">
+                {/* Items */}
+                <div className="space-y-3">
+                  {canasto.map(item => (
+                    <div key={item.productId} className="flex items-center gap-3 bg-artistic-cream/40 border border-artistic-border rounded-2xl p-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-artistic-dark truncate">
+                          {language === 'es' ? item.nameEs : item.nameEn}
+                        </p>
+                        <p className="text-xs text-artistic-muted">
+                          ${item.price.toLocaleString('es-AR')} c/u
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button onClick={() => cambiarCantidad(item.productId, -1)} className="p-1.5 rounded-full border border-artistic-border hover:bg-white text-artistic-muted cursor-pointer">
+                          {item.qty === 1 ? <Trash2 className="w-3.5 h-3.5" /> : <Minus className="w-3.5 h-3.5" />}
+                        </button>
+                        <span className="text-sm font-bold text-artistic-dark w-5 text-center">{item.qty}</span>
+                        <button onClick={() => cambiarCantidad(item.productId, 1)} className="p-1.5 rounded-full border border-artistic-border hover:bg-white text-artistic-muted cursor-pointer">
+                          <Plus className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      <span className="text-sm font-bold text-artistic-sage w-20 text-right shrink-0">
+                        ${(item.price * item.qty).toLocaleString('es-AR')}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Total */}
+                <div className="flex items-center justify-between border-t border-artistic-border pt-4">
+                  <span className="text-sm font-semibold uppercase tracking-wider text-artistic-muted">Total</span>
+                  <span className="font-serif font-semibold text-2xl text-artistic-sage">
+                    ${totalCanasto.toLocaleString('es-AR')}
+                  </span>
+                </div>
+
+                {/* Formulario de retiro */}
+                <form onSubmit={handleConfirmarRetiro} className="space-y-4 border-t border-artistic-border pt-5">
+                  <p className="text-xs font-bold uppercase tracking-wider text-artistic-dark flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5 text-artistic-sage" />
+                    {language === 'es' ? 'Turno de retiro' : 'Pickup appointment'}
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[10px] uppercase tracking-wider font-semibold text-artistic-muted mb-1">
+                        {language === 'es' ? 'Día' : 'Date'}
+                      </label>
+                      <input
+                        type="date"
+                        required
+                        value={retiroFecha}
+                        min={new Date().toISOString().split('T')[0]}
+                        onChange={(e) => setRetiroFecha(e.target.value)}
+                        className="w-full px-3 py-2.5 bg-white border border-artistic-border rounded-xl text-sm text-artistic-dark focus:outline-none focus:border-artistic-sage"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase tracking-wider font-semibold text-artistic-muted mb-1">
+                        {language === 'es' ? 'Hora' : 'Time'}
+                      </label>
+                      <input
+                        type="time"
+                        required
+                        value={retiroHora}
+                        onChange={(e) => setRetiroHora(e.target.value)}
+                        className="w-full px-3 py-2.5 bg-white border border-artistic-border rounded-xl text-sm text-artistic-dark focus:outline-none focus:border-artistic-sage"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-wider font-semibold text-artistic-muted mb-1">
+                      {language === 'es' ? 'Tu nombre' : 'Your name'}
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={clientName}
+                      onChange={(e) => setClientName(e.target.value)}
+                      placeholder={language === 'es' ? 'Ej: Sofía Martínez' : 'Ex: Sophie Martin'}
+                      className="w-full px-3 py-2.5 bg-white border border-artistic-border rounded-xl text-sm text-artistic-dark placeholder-stone-400 focus:outline-none focus:border-artistic-sage"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-wider font-semibold text-artistic-muted mb-1">
+                      {language === 'es' ? 'Tu WhatsApp' : 'Your WhatsApp'}
+                    </label>
+                    <div className="flex gap-2">
+                      <span className="px-3 py-2.5 bg-artistic-cream border border-artistic-border rounded-xl text-sm text-artistic-muted font-mono shrink-0">
+                        {phonePrefix}
+                      </span>
+                      <input
+                        type="tel"
+                        required
+                        value={clientPhone}
+                        onChange={(e) => setClientPhone(e.target.value.replace(/\D/g, ''))}
+                        placeholder="1155550000"
+                        className="flex-1 px-3 py-2.5 bg-white border border-artistic-border rounded-xl text-sm text-artistic-dark placeholder-stone-400 focus:outline-none focus:border-artistic-sage"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    id="confirmar_retiro_btn"
+                    className="w-full py-3.5 bg-artistic-sage hover:bg-artistic-dark text-white font-semibold rounded-full text-xs uppercase tracking-widest transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <Check className="w-4 h-4" />
+                    {language === 'es' ? 'Confirmar pedido' : 'Confirm order'}
+                  </button>
+
+                  <p className="text-[10px] text-center text-artistic-muted leading-relaxed">
+                    {language === 'es'
+                      ? 'Te esperamos el día y hora que elegiste para retirar tu pedido.'
+                      : 'We will be waiting for you at the chosen date and time.'}
+                  </p>
+                </form>
+              </div>
+            </motion.div>
           </div>
         )}
       </AnimatePresence>
