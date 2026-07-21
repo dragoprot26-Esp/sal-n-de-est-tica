@@ -96,8 +96,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
       } else if (foundCollab) {
         // Colaborador normal: espera la aprobación del dueño (seguridad).
         setCollabWaiting(true);
-        const approved = await requestCollaboratorAccess(foundCollab.username);
-        
+        const approved = await requestCollaboratorAccess(foundCollab.username, foundCollab.name);
+
         if (approved) {
           setCurrentUser({
             role: 'collaborator',
