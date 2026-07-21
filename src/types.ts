@@ -63,6 +63,7 @@ export interface Collaborator {
   phone: string;
   username: string;
   password?: string; // stored for simulation
+  esAdmin?: boolean; // Admin 2: acceso completo, sin esperar aprobación
   avatarUrl: string;
   status: 'active' | 'pending_approval' | 'approved' | 'rejected' | 'offline';
   biometricsEnabled: boolean;
