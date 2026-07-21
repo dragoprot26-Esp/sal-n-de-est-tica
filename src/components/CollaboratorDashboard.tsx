@@ -6,11 +6,13 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { getTranslation } from '../utils/i18n';
-import { 
-  Calendar, Check, User, Image, Settings, Sparkles, 
-  ShoppingBag, LogOut, Globe, Fingerprint, TrendingUp, Info
+import {
+  Calendar, Check, User, Image, Settings, Sparkles,
+  ShoppingBag, LogOut, Globe, Fingerprint, TrendingUp, Info,
+  Plus, Trash2, Pencil, X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { Service, Product } from '../types';
 
 export const CollaboratorDashboard: React.FC = () => {
   const {
@@ -19,7 +21,10 @@ export const CollaboratorDashboard: React.FC = () => {
     currentUser,
     setCurrentUser,
     services,
+    setServices,
     products,
+    setProducts,
+    categories,
     collaborators,
     setCollaborators,
     appointments,
@@ -142,6 +147,96 @@ export const CollaboratorDashboard: React.FC = () => {
 
   // Filter appointments specifically assigned to this collaborator
   const myAppointments = appointments.filter(a => a.collaboratorId === currentCollab.id);
+
+  // ── Gestión de SERVICIOS (alta / edición / borrado) ────────────────
+  const emptyService = { nameEs: '', nameEn: '', descEs: '', price: 0, duration: 60, category: (categories && categories[0]) || 'FACIAL', imageUrl: '' };
+  const [svcForm, setSvcForm] = useState(emptyService);
+  const [editingSvcId, setEditingSvcId] = useState<string | null>(null);
+
+  const handleSaveService = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!svcForm.nameEs.trim() || svcForm.price <= 0) {
+      triggerToast(language === 'es' ? 'Poné nombre y precio del servicio.' : 'Add a name and price.');
+      return;
+    }
+    const img = svcForm.imageUrl.trim() || 'https://images.unsplash.com/photo-1560750588-73207b1ef5b8?auto=format&fit=crop&q=80&w=400';
+    if (editingSvcId) {
+      setServices((prev: Service[]) => prev.map(s => s.id === editingSvcId ? {
+        ...s, nameEs: svcForm.nameEs, nameEn: svcForm.nameEn || svcForm.nameEs,
+        descriptionEs: svcForm.descEs, descriptionEn: svcForm.descEs,
+        price: svcForm.price, durationMinutes: svcForm.duration, category: svcForm.category, imageUrl: img
+      } : s));
+      triggerToast(language === 'es' ? 'Servicio actualizado.' : 'Service updated.');
+    } else {
+      const nuevo: Service = {
+        id: `service-${Date.now()}`, nameEs: svcForm.nameEs, nameEn: svcForm.nameEn || svcForm.nameEs,
+        descriptionEs: svcForm.descEs, descriptionEn: svcForm.descEs,
+        price: svcForm.price, durationMinutes: svcForm.duration, category: svcForm.category, imageUrl: img
+      };
+      setServices((prev: Service[]) => [nuevo, ...prev]);
+      triggerToast(language === 'es' ? '¡Servicio agregado!' : 'Service added!');
+    }
+    setSvcForm(emptyService);
+    setEditingSvcId(null);
+  };
+
+  const handleEditService = (s: Service) => {
+    setEditingSvcId(s.id);
+    setSvcForm({ nameEs: s.nameEs, nameEn: s.nameEn, descEs: s.descriptionEs, price: s.price, duration: s.durationMinutes, category: s.category, imageUrl: s.imageUrl });
+    setActiveTab('services');
+  };
+
+  const handleDeleteService = (id: string) => {
+    setServices((prev: Service[]) => prev.filter(s => s.id !== id));
+    if (editingSvcId === id) { setEditingSvcId(null); setSvcForm(emptyService); }
+    triggerToast(language === 'es' ? 'Servicio eliminado.' : 'Service deleted.');
+  };
+
+  // ── Gestión de PRODUCTOS (alta / edición / borrado) ────────────────
+  const emptyProduct = { nameEs: '', nameEn: '', descEs: '', price: 0, stock: 0, imageUrl: '' };
+  const [prodForm, setProdForm] = useState(emptyProduct);
+  const [editingProdId, setEditingProdId] = useState<string | null>(null);
+
+  const handleSaveProduct = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!prodForm.nameEs.trim() || prodForm.price <= 0) {
+      triggerToast(language === 'es' ? 'Poné nombre y precio del producto.' : 'Add a name and price.');
+      return;
+    }
+    const img = prodForm.imageUrl.trim() || 'https://images.unsplash.com/photo-1571781926291-c477ebfd024b?auto=format&fit=crop&q=80&w=400';
+    if (editingProdId) {
+      setProducts((prev: Product[]) => prev.map(p => p.id === editingProdId ? {
+        ...p, nameEs: prodForm.nameEs, nameEn: prodForm.nameEn || prodForm.nameEs,
+        descriptionEs: prodForm.descEs, descriptionEn: prodForm.descEs,
+        price: prodForm.price, stock: prodForm.stock, imageUrl: img
+      } : p));
+      triggerToast(language === 'es' ? 'Producto actualizado.' : 'Product updated.');
+    } else {
+      const nuevo: Product = {
+        id: `product-${Date.now()}`, nameEs: prodForm.nameEs, nameEn: prodForm.nameEn || prodForm.nameEs,
+        descriptionEs: prodForm.descEs, descriptionEn: prodForm.descEs,
+        price: prodForm.price, stock: prodForm.stock, imageUrl: img
+      };
+      setProducts((prev: Product[]) => [nuevo, ...prev]);
+      triggerToast(language === 'es' ? '¡Producto agregado!' : 'Product added!');
+    }
+    setProdForm(emptyProduct);
+    setEditingProdId(null);
+  };
+
+  const handleEditProduct = (p: Product) => {
+    setEditingProdId(p.id);
+    setProdForm({ nameEs: p.nameEs, nameEn: p.nameEn, descEs: p.descriptionEs, price: p.price, stock: p.stock, imageUrl: p.imageUrl });
+    setActiveTab('products');
+  };
+
+  const handleDeleteProduct = (id: string) => {
+    setProducts((prev: Product[]) => prev.filter(p => p.id !== id));
+    if (editingProdId === id) { setEditingProdId(null); setProdForm(emptyProduct); }
+    triggerToast(language === 'es' ? 'Producto eliminado.' : 'Product deleted.');
+  };
+
+  const inputCls = 'w-full px-4 py-2.5 bg-artistic-bg border border-artistic-border rounded-xl text-xs focus:outline-none focus:border-artistic-sage focus:ring-1 focus:ring-artistic-sage';
 
   return (
     <div className="min-h-screen bg-artistic-bg text-artistic-dark flex flex-col md:flex-row font-sans selection:bg-artistic-sage/20 selection:text-artistic-sage">
@@ -444,8 +539,50 @@ export const CollaboratorDashboard: React.FC = () => {
           <div className="space-y-6">
             <div className="border-b border-artistic-border pb-6">
               <h3 className="text-2xl font-serif font-medium italic tracking-tight text-artistic-dark">{getTranslation(language, 'services')}</h3>
-              <p className="text-xs text-artistic-muted mt-1">Explora las descripciones, categorías y duraciones de los servicios del salón.</p>
+              <p className="text-xs text-artistic-muted mt-1">Agregá, editá o quitá servicios del salón. Los cambios se sincronizan con el resto.</p>
             </div>
+
+            {/* Alta / edición de servicio */}
+            <form onSubmit={handleSaveService} className="p-6 bg-white border border-artistic-border rounded-3xl shadow-sm space-y-4">
+              <h4 className="font-serif italic font-medium text-artistic-dark text-base flex items-center justify-between">
+                <span className="flex items-center gap-2"><Plus className="w-4 h-4 text-artistic-sage" />{editingSvcId ? 'Editar servicio' : 'Agregar servicio'}</span>
+                {editingSvcId && (
+                  <button type="button" onClick={() => { setEditingSvcId(null); setSvcForm(emptyService); }} className="text-[11px] text-red-500 hover:underline flex items-center gap-1"><X className="w-3.5 h-3.5" />Cancelar</button>
+                )}
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="sm:col-span-2">
+                  <label className="block text-[10px] text-artistic-muted uppercase font-semibold tracking-wider mb-1.5">Nombre</label>
+                  <input type="text" value={svcForm.nameEs} onChange={e => setSvcForm({ ...svcForm, nameEs: e.target.value })} placeholder="Ej: Limpieza facial" className={inputCls} />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-artistic-muted uppercase font-semibold tracking-wider mb-1.5">Precio ($)</label>
+                  <input type="number" value={svcForm.price || ''} onChange={e => setSvcForm({ ...svcForm, price: Number(e.target.value) })} placeholder="32000" className={inputCls} />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-[10px] text-artistic-muted uppercase font-semibold tracking-wider mb-1.5">Descripción</label>
+                  <input type="text" value={svcForm.descEs} onChange={e => setSvcForm({ ...svcForm, descEs: e.target.value })} placeholder="Breve descripción para la clienta" className={inputCls} />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-artistic-muted uppercase font-semibold tracking-wider mb-1.5">Duración</label>
+                  <select value={svcForm.duration} onChange={e => setSvcForm({ ...svcForm, duration: Number(e.target.value) })} className={inputCls}>
+                    {[30, 45, 60, 75, 90, 120].map(m => <option key={m} value={m}>{m} min</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] text-artistic-muted uppercase font-semibold tracking-wider mb-1.5">Categoría</label>
+                  <input type="text" list="cat_list" value={svcForm.category} onChange={e => setSvcForm({ ...svcForm, category: e.target.value.toUpperCase() })} placeholder="FACIAL" className={inputCls} />
+                  <datalist id="cat_list">{(categories || []).map(c => <option key={c} value={c} />)}</datalist>
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-[10px] text-artistic-muted uppercase font-semibold tracking-wider mb-1.5">Imagen (URL, opcional)</label>
+                  <input type="url" value={svcForm.imageUrl} onChange={e => setSvcForm({ ...svcForm, imageUrl: e.target.value })} placeholder="https://..." className={inputCls} />
+                </div>
+              </div>
+              <button type="submit" className="px-6 py-2.5 bg-artistic-sage hover:bg-artistic-dark text-white font-semibold rounded-full text-xs uppercase tracking-widest transition-colors flex items-center gap-2">
+                <Check className="w-3.5 h-3.5" />{editingSvcId ? 'Guardar cambios' : 'Agregar servicio'}
+              </button>
+            </form>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {services.map(service => (
@@ -457,7 +594,13 @@ export const CollaboratorDashboard: React.FC = () => {
                     <h5 className="font-serif italic font-medium text-artistic-dark text-sm mt-1.5">{language === 'es' ? service.nameEs : service.nameEn}</h5>
                     <p className="text-[10px] text-artistic-muted">{service.durationMinutes} minutos</p>
                   </div>
-                  <span className="font-semibold font-mono text-artistic-sage text-sm">${service.price.toLocaleString()}</span>
+                  <div className="flex flex-col items-end gap-2">
+                    <span className="font-semibold font-mono text-artistic-sage text-sm">${service.price.toLocaleString()}</span>
+                    <div className="flex items-center gap-1.5">
+                      <button onClick={() => handleEditService(service)} title="Editar" className="p-1.5 bg-artistic-cream hover:bg-artistic-border rounded-lg text-artistic-dark transition-all"><Pencil className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => handleDeleteService(service.id)} title="Eliminar" className="p-1.5 bg-red-50 hover:bg-red-100 rounded-lg text-red-600 transition-all"><Trash2 className="w-3.5 h-3.5" /></button>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
@@ -469,8 +612,43 @@ export const CollaboratorDashboard: React.FC = () => {
           <div className="space-y-6">
             <div className="border-b border-artistic-border pb-6">
               <h3 className="text-2xl font-serif font-medium italic tracking-tight text-artistic-dark">{getTranslation(language, 'products')}</h3>
-              <p className="text-xs text-artistic-muted mt-1">Explora existencias de cosméticos y precios sugeridos de venta.</p>
+              <p className="text-xs text-artistic-muted mt-1">Agregá, editá o quitá productos y su stock. Los cambios se sincronizan con el resto.</p>
             </div>
+
+            {/* Alta / edición de producto */}
+            <form onSubmit={handleSaveProduct} className="p-6 bg-white border border-artistic-border rounded-3xl shadow-sm space-y-4">
+              <h4 className="font-serif italic font-medium text-artistic-dark text-base flex items-center justify-between">
+                <span className="flex items-center gap-2"><Plus className="w-4 h-4 text-artistic-sage" />{editingProdId ? 'Editar producto' : 'Agregar producto'}</span>
+                {editingProdId && (
+                  <button type="button" onClick={() => { setEditingProdId(null); setProdForm(emptyProduct); }} className="text-[11px] text-red-500 hover:underline flex items-center gap-1"><X className="w-3.5 h-3.5" />Cancelar</button>
+                )}
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="sm:col-span-2">
+                  <label className="block text-[10px] text-artistic-muted uppercase font-semibold tracking-wider mb-1.5">Nombre</label>
+                  <input type="text" value={prodForm.nameEs} onChange={e => setProdForm({ ...prodForm, nameEs: e.target.value })} placeholder="Ej: Sérum Vitamina C" className={inputCls} />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-artistic-muted uppercase font-semibold tracking-wider mb-1.5">Precio ($)</label>
+                  <input type="number" value={prodForm.price || ''} onChange={e => setProdForm({ ...prodForm, price: Number(e.target.value) })} placeholder="18500" className={inputCls} />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-[10px] text-artistic-muted uppercase font-semibold tracking-wider mb-1.5">Descripción</label>
+                  <input type="text" value={prodForm.descEs} onChange={e => setProdForm({ ...prodForm, descEs: e.target.value })} placeholder="Breve descripción del producto" className={inputCls} />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-artistic-muted uppercase font-semibold tracking-wider mb-1.5">Stock (unidades)</label>
+                  <input type="number" value={prodForm.stock || ''} onChange={e => setProdForm({ ...prodForm, stock: Number(e.target.value) })} placeholder="12" className={inputCls} />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-[10px] text-artistic-muted uppercase font-semibold tracking-wider mb-1.5">Imagen (URL, opcional)</label>
+                  <input type="url" value={prodForm.imageUrl} onChange={e => setProdForm({ ...prodForm, imageUrl: e.target.value })} placeholder="https://..." className={inputCls} />
+                </div>
+              </div>
+              <button type="submit" className="px-6 py-2.5 bg-artistic-sage hover:bg-artistic-dark text-white font-semibold rounded-full text-xs uppercase tracking-widest transition-colors flex items-center gap-2">
+                <Check className="w-3.5 h-3.5" />{editingProdId ? 'Guardar cambios' : 'Agregar producto'}
+              </button>
+            </form>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {products.map(product => (
@@ -480,6 +658,10 @@ export const CollaboratorDashboard: React.FC = () => {
                   <div className="pt-2.5 border-t border-artistic-border flex items-center justify-between text-xs">
                     <span className="text-artistic-muted">Stock: {product.stock} un.</span>
                     <span className="font-semibold font-mono text-artistic-sage">${product.price.toLocaleString()}</span>
+                  </div>
+                  <div className="flex items-center justify-end gap-1.5 pt-1">
+                    <button onClick={() => handleEditProduct(product)} title="Editar" className="p-1.5 bg-artistic-cream hover:bg-artistic-border rounded-lg text-artistic-dark transition-all"><Pencil className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => handleDeleteProduct(product.id)} title="Eliminar" className="p-1.5 bg-red-50 hover:bg-red-100 rounded-lg text-red-600 transition-all"><Trash2 className="w-3.5 h-3.5" /></button>
                   </div>
                 </div>
               ))}
