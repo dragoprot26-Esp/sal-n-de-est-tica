@@ -122,6 +122,7 @@ export const AdminDashboard: React.FC = () => {
   const [collabPhone, setCollabPhone] = useState('');
   const [collabUser, setCollabUser] = useState('');
   const [collabPass, setCollabPass] = useState('');
+  const [collabEsAdmin, setCollabEsAdmin] = useState(false);
 
   // Editing configuration states
   const [editingPrefix, setEditingPrefix] = useState(phonePrefix);
@@ -266,14 +267,15 @@ export const AdminDashboard: React.FC = () => {
           name: collabName,
           phone: collabPhone,
           username: collabUser.toLowerCase().trim(),
-          password: collabPass || existing.password
+          password: collabPass || existing.password,
+          esAdmin: collabEsAdmin
         });
         triggerToast(language === 'es' ? 'Colaborador editado con éxito!' : 'Collaborator edited successfully!');
       }
       setEditingCollabId(null);
     } else {
       if (!collabPass) return;
-      addCollaborator(collabName, collabPhone, collabUser, collabPass);
+      addCollaborator(collabName, collabPhone, collabUser, collabPass, collabEsAdmin);
       triggerToast(language === 'es' ? 'Colaborador creado con éxito!' : 'Collaborator created successfully!');
     }
 
@@ -281,6 +283,7 @@ export const AdminDashboard: React.FC = () => {
     setCollabPhone('');
     setCollabUser('');
     setCollabPass('');
+    setCollabEsAdmin(false);
   };
 
   // Delete Service / Product
@@ -938,6 +941,28 @@ export const AdminDashboard: React.FC = () => {
                     </button>
                   </div>
                 </div>
+
+                {/* Tilde: Admin 2 (acceso completo, sin esperar aprobación) */}
+                <div className="sm:col-span-4">
+                  <label className="flex items-start gap-2.5 cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      id="collab_es_admin_checkbox"
+                      checked={collabEsAdmin}
+                      onChange={(e) => setCollabEsAdmin(e.target.checked)}
+                      className="mt-0.5 rounded border-artistic-border text-artistic-sage focus:ring-artistic-sage"
+                    />
+                    <span className="text-xs text-artistic-muted group-hover:text-artistic-dark transition-colors">
+                      <span className="font-semibold text-artistic-dark">
+                        {language === 'es' ? 'Administrador 2 (acceso completo)' : 'Admin 2 (full access)'}
+                      </span>
+                      {' — '}
+                      {language === 'es'
+                        ? 'entra directo con permisos de administrador, sin esperar tu aprobación. Dejalo destildado para un colaborador normal (que sí espera que lo autorices).'
+                        : 'logs in directly with admin permissions, no approval needed.'}
+                    </span>
+                  </label>
+                </div>
               </form>
             </div>
 
@@ -988,6 +1013,7 @@ export const AdminDashboard: React.FC = () => {
                         setCollabPhone(collab.phone);
                         setCollabUser(collab.username);
                         setCollabPass('');
+                        setCollabEsAdmin(!!(collab as any).esAdmin);
                         window.scrollTo({ top: 120, behavior: 'smooth' });
                       }}
                       className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-full transition-colors flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider cursor-pointer"

@@ -76,12 +76,25 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
         setLoading(false);
         return;
       }
-      const foundCollab = collaborators.find(
-        c => c.username === username.toLowerCase().trim()
-      );
+      // Usamos el colaborador que trae la nube (no el estado local, que en el
+      // dispositivo del colaborador está vacío/con demos).
+      const foundCollab = (res as any).collab;
 
-      if (foundCollab) {
-        // Triggers the real-time request to the admin
+      if (foundCollab && foundCollab.esAdmin) {
+        // Admin 2: acceso completo, SIN esperar aprobación (es de confianza).
+        setCurrentUser({
+          role: 'admin',
+          id: foundCollab.id,
+          name: foundCollab.name,
+          username: foundCollab.username
+        });
+        if (biometricsChecked) {
+          toggleBiometricsForUser(foundCollab.username, true);
+        }
+        setLoading(false);
+        onClose();
+      } else if (foundCollab) {
+        // Colaborador normal: espera la aprobación del dueño (seguridad).
         setCollabWaiting(true);
         const approved = await requestCollaboratorAccess(foundCollab.username);
         
