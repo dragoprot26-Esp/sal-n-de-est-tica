@@ -540,6 +540,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               setTimeout(() => { hydratingRef.current = false; }, 300);
             }
           }
+          // CANDADO DE CREDENCIALES: nunca subir un colaborador sin usuario o
+          // sin clave si en la nube todavía los tiene. Evita que una lista
+          // "recortada" (como la de la página pública) borre los accesos.
+          if (Array.isArray(remoto.collaborators) && Array.isArray(snap.collaborators)) {
+            const porId: Record<string, any> = {};
+            remoto.collaborators.forEach((c: any) => { if (c && c.id) porId[c.id] = c; });
+            snap.collaborators = snap.collaborators.map((c: any) => {
+              const viejo = porId[c && c.id];
+              if (!viejo) return c;
+              return {
+                ...c,
+                username: (c.username && String(c.username).trim()) ? c.username : viejo.username,
+                password: (c.password && String(c.password).trim()) ? c.password : viejo.password,
+                esAdmin:  (c.esAdmin === undefined) ? viejo.esAdmin : c.esAdmin,
+              };
+            });
+          }
         }
       } catch (e) { /* si falla la lectura, guardamos igual lo local */ }
       cloudSave(licenseCode, snap);
