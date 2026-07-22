@@ -283,7 +283,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return new Promise(async (resolve) => {
       let terminado = false;
       const finish = (v: boolean) => { if (!terminado) { terminado = true; resolve(v); } };
-      // 1) Dejar el pedido en la nube (queda 'pendiente').
+      // 0) Si el dueño YA lo aceptó alguna vez, entra directo: se aprueba una
+      //    sola vez y la persona queda como parte del equipo.
+      const previo = await estadoAcceso(cod, user);
+      if (previo === 'aprobado') { finish(true); return; }
+      // 1) Primera vez (o pendiente/rechazado): dejar el pedido en la nube.
       await solicitarAcceso(cod, user, nombre);
       // 2) Consultar el estado cada 3 segundos.
       const interval = setInterval(async () => {
