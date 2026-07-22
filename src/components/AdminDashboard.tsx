@@ -595,51 +595,8 @@ export const AdminDashboard: React.FC = () => {
       {/* Main Panel Area */}
       <main className="flex-1 p-6 md:p-10 space-y-8 max-w-7xl mx-auto overflow-x-hidden">
         
-        {/* Real-Time Collaborators Sign-In Approval Prompts */}
-        <AnimatePresence>
-          {pendingAccessRequests.length > 0 && (
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="p-6 bg-gradient-to-r from-artistic-sage/15 via-artistic-sage/10 to-transparent border border-artistic-sage/30 rounded-3xl space-y-4 shadow-sm"
-            >
-              <div className="flex items-center gap-2">
-                <ShieldAlert className="w-5 h-5 text-artistic-sage animate-pulse" />
-                <h4 className="font-serif italic font-medium text-artistic-dark text-base">{getTranslation(language, 'activeRequests')}</h4>
-                <span className="px-2.5 py-0.5 bg-artistic-sage text-white rounded-full font-semibold text-[9px] uppercase tracking-wider">REAL-TIME</span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {pendingAccessRequests.map(req => (
-                  <div key={req.id} className="p-4 bg-white border border-artistic-border rounded-2xl flex items-center justify-between gap-4 shadow-xs">
-                    <div>
-                      <h5 className="font-semibold text-artistic-dark text-xs">{req.name}</h5>
-                      <p className="text-[10px] text-artistic-muted mt-0.5">Usuario: @{req.username} • {req.timestamp}</p>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        id={`approve_req_${req.id}`}
-                        onClick={() => { approveAccessRequest(req.id); triggerToast(language === 'es' ? 'Acceso Autorizado' : 'Access Authorized'); }}
-                        className="p-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full transition-all"
-                        title={getTranslation(language, 'authorize')}
-                      >
-                        <Check className="w-3.5 h-3.5 stroke-[3]" />
-                      </button>
-                      <button
-                        id={`deny_req_${req.id}`}
-                        onClick={() => { denyAccessRequest(req.id); triggerToast(language === 'es' ? 'Acceso Denegado' : 'Access Denied'); }}
-                        className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-full transition-all"
-                        title={getTranslation(language, 'deny')}
-                      >
-                        <X className="w-3.5 h-3.5 stroke-[3]" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* (Se quitó el cartel de aprobación en tiempo real: el colaborador
+            entra directo. El dueño lo autoriza al crearlo desde el panel.) */}
 
         {/* Tab 1: Sales statistics & calculations */}
         {activeTab === 'sales' && (
