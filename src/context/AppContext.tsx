@@ -271,9 +271,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCollaborators(prev => [...prev, newCollab]);
   };
 
-  // Delete Collaborator
+  // Delete Collaborator — BORRADO SUAVE.
+  // No lo sacamos de la lista: lo marcamos como eliminado. Así, cuando el
+  // celular y la PC fusionan sus listas, el borrado se respeta en los dos
+  // lados (si lo sacáramos, el otro dispositivo lo volvería a agregar).
   const deleteCollaborator = (id: string) => {
-    setCollaborators(prev => prev.filter(c => c.id !== id));
+    setCollaborators(prev => prev.map(c =>
+      c.id === id ? ({ ...c, eliminado: true, username: '', password: '' } as any) : c
+    ));
   };
 
   // Edit Collaborator
@@ -543,9 +548,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               setTimeout(() => { hydratingRef.current = false; }, 300);
             }
           }
-          // CANDADO DE CREDENCIALES: nunca subir un colaborador sin usuario o
-          // sin clave si en la nube todavía los tiene. Evita que una lista
-          // "recortada" (como la de la página pública) borre los accesos.
+          // COLABORADORES: candado de credenciales + fusión entre dispositivos.
+          // 1) Nunca subir un colaborador sin usuario/clave si la nube todavía
+          //    los tiene (evita que una lista recortada borre los accesos).
+          // 2) Sumar los que existen en la nube y acá no: son los que dio de
+          //    alta el celular mientras la PC tenía la lista vieja. Sin esto,
+          //    el último en guardar pisaba al otro.
           if (Array.isArray(remoto.collaborators) && Array.isArray(snap.collaborators)) {
             const porId: Record<string, any> = {};
             remoto.collaborators.forEach((c: any) => { if (c && c.id) porId[c.id] = c; });
@@ -559,6 +567,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 esAdmin:  (c.esAdmin === undefined) ? viejo.esAdmin : c.esAdmin,
               };
             });
+            const mios = new Set(snap.collaborators.map((c: any) => c && c.id));
+            const deOtroDispositivo = remoto.collaborators.filter((c: any) => c && c.id && !mios.has(c.id));
+            if (deOtroDispositivo.length) {
+              snap.collaborators = [...snap.collaborators, ...deOtroDispositivo];
+              hydratingRef.current = true;
+              setCollaborators(snap.collaborators);
+              setTimeout(() => { hydratingRef.current = false; }, 300);
+            }
           }
         }
       } catch (e) { /* si falla la lectura, guardamos igual lo local */ }
@@ -646,8 +662,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (Array.isArray(dd.products)) {
         setProducts((prev: any[]) => JSON.stringify(prev) !== JSON.stringify(dd.products) ? dd.products : prev);
       }
+      // Colaboradores: traemos los que dio de alta el otro dispositivo (por ej.
+      // los que cargaste desde el celular) y actualizamos los que ya tenemos.
+      if (Array.isArray(dd.collaborators)) {
+        setCollaborators((prev: any[]) => {
+          const porId: Record<string, any> = {};
+          prev.forEach((c) => { if (c && c.id) porId[c.id] = c; });
+          let cambio = false;
+          const fusion = dd.collaborators.map((remotoC: any) => {
+            const local = porId[remotoC && remotoC.id];
+            if (!local) { cambio = true; return remotoC; }
+            if (JSON.stringify(local) !== JSON.stringify(remotoC)) { cambio = true; return remotoC; }
+            return local;
+          });
+          // Conservamos los locales que todavía no llegaron a la nube.
+          const enRemoto = new Set(dd.collaborators.map((c: any) => c && c.id));
+          const soloLocales = prev.filter((c) => c && c.id && !enRemoto.has(c.id));
+          if (soloLocales.length) cambio = true;
+          return cambio ? [...fusion, ...soloLocales] : prev;
+        });
+      }
       setTimeout(() => { hydratingRef.current = false; }, 300);
-    }, 30000);
+    }, 15000);
     return () => clearInterval(iv);
   }, [licenseCode, currentUser]);
 
