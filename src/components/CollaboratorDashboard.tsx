@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Service, Product } from '../types';
+import { comprimirImagen } from '../img';
 
 export const CollaboratorDashboard: React.FC = () => {
   const {
@@ -414,12 +415,40 @@ export const CollaboratorDashboard: React.FC = () => {
                       <Image className="w-3.5 h-3.5 text-artistic-sage" />
                       {getTranslation(language, 'logoSettings')}
                     </label>
+
+                    {/* Subir foto desde la PC o el celular */}
+                    <div className="flex items-center gap-3 mb-2.5">
+                      <img
+                        src={avatarInput || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=150'}
+                        alt="Mi foto"
+                        className="w-14 h-14 rounded-full object-cover border border-artistic-border shadow-sm bg-artistic-cream shrink-0"
+                      />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        id="collab_avatar_file"
+                        onChange={(e) => {
+                          const file = e.target.files && e.target.files[0];
+                          if (!file) return;
+                          comprimirImagen(file, 400, 0.75).then((base64) => {
+                            setAvatarInput(base64);
+                            triggerToast(language === 'es' ? 'Foto cargada. Tocá Guardar.' : 'Photo loaded. Press Save.');
+                          });
+                        }}
+                        className="text-[11px] text-artistic-muted file:mr-3 file:px-3 file:py-1.5 file:rounded-full file:border-0 file:bg-artistic-sage file:text-white file:text-[10px] file:font-semibold file:uppercase file:tracking-wider file:cursor-pointer cursor-pointer"
+                      />
+                    </div>
+                    <p className="text-[10px] text-artistic-muted mb-2 italic">
+                      {language === 'es'
+                        ? 'Elegí una foto de tu galería o sacala con la cámara. También podés pegar un enlace abajo.'
+                        : 'Pick a photo from your gallery or camera. You can also paste a link below.'}
+                    </p>
                     <input
-                      type="url"
-                      required
+                      type="text"
                       id="collab_avatar_input"
                       value={avatarInput}
                       onChange={(e) => setAvatarInput(e.target.value)}
+                      placeholder="https://... (opcional)"
                       className="w-full px-4 py-2.5 bg-artistic-bg border border-artistic-border rounded-xl text-xs focus:outline-none focus:border-artistic-sage focus:ring-1 focus:ring-artistic-sage"
                     />
                   </div>

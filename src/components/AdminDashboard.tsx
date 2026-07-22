@@ -123,6 +123,8 @@ export const AdminDashboard: React.FC = () => {
   const [collabUser, setCollabUser] = useState('');
   const [collabPass, setCollabPass] = useState('');
   const [collabEsAdmin, setCollabEsAdmin] = useState(false);
+  // Foto del colaborador subida desde la PC o el celular (queda en base64 comprimido).
+  const [collabAvatar, setCollabAvatar] = useState('');
 
   // Editing configuration states
   const [editingPrefix, setEditingPrefix] = useState(phonePrefix);
@@ -268,7 +270,8 @@ export const AdminDashboard: React.FC = () => {
           phone: collabPhone,
           username: collabUser.toLowerCase().trim(),
           password: collabPass || existing.password,
-          esAdmin: collabEsAdmin
+          esAdmin: collabEsAdmin,
+          avatarUrl: collabAvatar || existing.avatarUrl
         });
         triggerToast(language === 'es' ? 'Colaborador editado con éxito!' : 'Collaborator edited successfully!');
       }
@@ -281,7 +284,7 @@ export const AdminDashboard: React.FC = () => {
           : '⚠️ Password must be at least 6 characters.');
         return;
       }
-      addCollaborator(collabName, collabPhone, collabUser, collabPass, collabEsAdmin);
+      addCollaborator(collabName, collabPhone, collabUser, collabPass, collabEsAdmin, collabAvatar);
       triggerToast(language === 'es' ? 'Colaborador creado con éxito!' : 'Collaborator created successfully!');
     }
 
@@ -290,6 +293,7 @@ export const AdminDashboard: React.FC = () => {
     setCollabUser('');
     setCollabPass('');
     setCollabEsAdmin(false);
+    setCollabAvatar('');
   };
 
   // Delete Service / Product
@@ -949,6 +953,50 @@ export const AdminDashboard: React.FC = () => {
                   </div>
                 </div>
 
+                {/* Foto del colaborador: se sube desde la PC o el celular */}
+                <div className="sm:col-span-4">
+                  <div className="flex items-center gap-4 flex-wrap">
+                    <img
+                      src={collabAvatar || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=150'}
+                      alt="Foto"
+                      className="w-14 h-14 rounded-full object-cover border border-artistic-border shadow-sm bg-artistic-cream"
+                    />
+                    <div>
+                      <label className="block text-[10px] text-artistic-muted uppercase font-semibold tracking-wider mb-1.5">
+                        {language === 'es' ? 'Foto del colaborador (opcional)' : 'Collaborator photo (optional)'}
+                      </label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        id="collab_avatar_file"
+                        onChange={(e) => {
+                          const file = e.target.files && e.target.files[0];
+                          if (!file) return;
+                          comprimirImagen(file, 400, 0.75).then((base64) => {
+                            setCollabAvatar(base64);
+                            triggerToast(language === 'es' ? 'Foto cargada. Acordate de Guardar.' : 'Photo loaded. Remember to Save.');
+                          });
+                        }}
+                        className="text-[11px] text-artistic-muted file:mr-3 file:px-3 file:py-1.5 file:rounded-full file:border-0 file:bg-artistic-sage file:text-white file:text-[10px] file:font-semibold file:uppercase file:tracking-wider file:cursor-pointer cursor-pointer"
+                      />
+                      <p className="text-[10px] text-artistic-muted mt-1 italic">
+                        {language === 'es'
+                          ? 'Desde la galería o la cámara del celular. Se achica sola para no ocupar lugar.'
+                          : 'From gallery or phone camera. Auto-resized.'}
+                      </p>
+                    </div>
+                    {collabAvatar && (
+                      <button
+                        type="button"
+                        onClick={() => setCollabAvatar('')}
+                        className="text-[11px] text-red-500 hover:underline cursor-pointer"
+                      >
+                        {language === 'es' ? 'Quitar foto' : 'Remove photo'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+
                 {/* Tilde: Admin 2 (acceso completo, sin esperar aprobación) */}
                 <div className="sm:col-span-4">
                   <label className="flex items-start gap-2.5 cursor-pointer group">
@@ -1021,6 +1069,7 @@ export const AdminDashboard: React.FC = () => {
                         setCollabUser(collab.username);
                         setCollabPass('');
                         setCollabEsAdmin(!!(collab as any).esAdmin);
+                        setCollabAvatar(collab.avatarUrl || '');
                         window.scrollTo({ top: 120, behavior: 'smooth' });
                       }}
                       className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-full transition-colors flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider cursor-pointer"
