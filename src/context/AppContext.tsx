@@ -65,7 +65,7 @@ interface AppContextProps {
   approveComment: (id: string) => void;
   rejectComment: (id: string) => void;
   
-  addCollaborator: (name: string, phone: string, user: string, pass: string, esAdmin?: boolean) => void;
+  addCollaborator: (name: string, phone: string, user: string, pass: string, esAdmin?: boolean, avatarUrl?: string) => void;
   deleteCollaborator: (id: string) => void;
   editCollaborator: (collab: Collaborator) => void;
   
@@ -250,7 +250,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Create Collaborator
-  const addCollaborator = (name: string, phone: string, user: string, pass: string, esAdmin?: boolean) => {
+  const addCollaborator = (name: string, phone: string, user: string, pass: string, esAdmin?: boolean, avatarUrl?: string) => {
     const id = `collab-${Date.now()}`;
     const newCollab: Collaborator = {
       id,
@@ -259,7 +259,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       username: user.toLowerCase().trim(),
       password: pass,
       esAdmin: !!esAdmin,
-      avatarUrl: `https://images.unsplash.com/photo-${1500000000000 + Math.floor(Math.random() * 999999)}?auto=format&fit=crop&q=80&w=150`,
+      // Si el dueño subió una foto desde su PC/celular la usamos; si no, una por defecto.
+      avatarUrl: (avatarUrl && avatarUrl.trim())
+        ? avatarUrl
+        : `https://images.unsplash.com/photo-${1500000000000 + Math.floor(Math.random() * 999999)}?auto=format&fit=crop&q=80&w=150`,
       status: 'approved',
       biometricsEnabled: false,
       servicesCompleted: 0,
