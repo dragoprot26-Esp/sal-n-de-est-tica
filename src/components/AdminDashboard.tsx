@@ -275,6 +275,12 @@ export const AdminDashboard: React.FC = () => {
       setEditingCollabId(null);
     } else {
       if (!collabPass) return;
+      if (collabPass.length < 6) {
+        triggerToast(language === 'es'
+          ? '⚠️ La contraseña debe tener al menos 6 caracteres (lo exige la seguridad de la nube).'
+          : '⚠️ Password must be at least 6 characters.');
+        return;
+      }
       addCollaborator(collabName, collabPhone, collabUser, collabPass, collabEsAdmin);
       triggerToast(language === 'es' ? 'Colaborador creado con éxito!' : 'Collaborator created successfully!');
     }
@@ -926,8 +932,9 @@ export const AdminDashboard: React.FC = () => {
                     <input
                       type="password"
                       required={editingCollabId === null}
+                      minLength={6}
                       id="new_collab_password"
-                      placeholder="Ej: clave123"
+                      placeholder={language === 'es' ? 'Mínimo 6 caracteres' : 'Min. 6 characters'}
                       value={collabPass}
                       onChange={(e) => setCollabPass(e.target.value)}
                       className={`w-full px-4 py-2.5 rounded-xl text-xs focus:outline-none focus:ring-1 ${adminTheme === 'dark' ? 'bg-stone-950 border-stone-800 text-stone-100 focus:border-stone-500 focus:ring-stone-500' : 'bg-artistic-bg border-artistic-border text-artistic-dark focus:border-artistic-sage focus:ring-artistic-sage'}`}
@@ -981,11 +988,11 @@ export const AdminDashboard: React.FC = () => {
                   <div className={`border-t pt-3 space-y-1 text-xs ${adminTheme === 'dark' ? 'border-stone-800' : 'border-artistic-border'}`}>
                     <p className="flex justify-between">
                       <span className="text-artistic-muted">Servicios Realizados:</span>
-                      <span className="font-semibold">{collab.servicesCompleted}</span>
+                      <span className="font-semibold">{collab.servicesCompleted ?? 0}</span>
                     </p>
                     <p className="flex justify-between">
                       <span className="text-artistic-muted">Ingresos Generados:</span>
-                      <span className="font-semibold text-artistic-sage">${collab.revenueGenerated.toLocaleString()}</span>
+                      <span className="font-semibold text-artistic-sage">${(collab.revenueGenerated ?? 0).toLocaleString()}</span>
                     </p>
                     <p className="flex justify-between items-center">
                       <span className="text-artistic-muted">Biometría:</span>

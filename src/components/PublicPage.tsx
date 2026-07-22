@@ -27,12 +27,18 @@ export const PublicPage: React.FC<PublicPageProps> = ({ onOpenLogin }) => {
     services,
     products,
     collaborators,
+    publicCollabs,
     addAppointment,
     comments,
     addComment,
     phonePrefix,
     categories
   } = useApp();
+
+  // Profesionales para elegir en la reserva: los que manda la página pública.
+  // Si el dueño está viendo su propia página (todavía sin datos públicos),
+  // usamos los del panel para que igual pueda probar.
+  const profesionales = (publicCollabs && publicCollabs.length) ? publicCollabs : collaborators;
 
   // Booking states
   const [selectedService, setSelectedService] = useState('');
@@ -761,7 +767,7 @@ export const PublicPage: React.FC<PublicPageProps> = ({ onOpenLogin }) => {
                         className="w-full px-4 py-2.5 bg-white border border-artistic-border rounded-xl text-sm focus:outline-none focus:border-artistic-sage focus:ring-1 focus:ring-artistic-sage transition-all"
                       >
                         <option value="">-- {getTranslation(language, 'selectCollaborator')} --</option>
-                        {collaborators.map(col => (
+                        {profesionales.map((col: any) => (
                           <option key={col.id} value={col.id}>{col.name}</option>
                         ))}
                       </select>

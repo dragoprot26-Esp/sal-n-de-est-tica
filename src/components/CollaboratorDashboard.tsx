@@ -97,8 +97,8 @@ export const CollaboratorDashboard: React.FC = () => {
       if (c.id === currentCollab.id) {
         return {
           ...c,
-          servicesCompleted: c.servicesCompleted + 1,
-          revenueGenerated: c.revenueGenerated + price
+          servicesCompleted: (c.servicesCompleted ?? 0) + 1,
+          revenueGenerated: (c.revenueGenerated ?? 0) + price
         };
       }
       return c;
@@ -362,7 +362,7 @@ export const CollaboratorDashboard: React.FC = () => {
                   <TrendingUp className="w-3.5 h-3.5 text-artistic-sage" />
                   {getTranslation(language, 'myServicesCompleted')}
                 </span>
-                <p className="text-3xl font-serif font-medium text-artistic-dark">{currentCollab.servicesCompleted}</p>
+                <p className="text-3xl font-serif font-medium text-artistic-dark">{currentCollab.servicesCompleted ?? 0}</p>
                 <span className="text-[10px] text-artistic-muted block italic">Tratamientos finalizados con éxito</span>
               </div>
 
@@ -371,7 +371,7 @@ export const CollaboratorDashboard: React.FC = () => {
                   <Sparkles className="w-3.5 h-3.5 text-artistic-sage" />
                   {getTranslation(language, 'myRevenue')}
                 </span>
-                <p className="text-3xl font-serif font-medium text-artistic-sage">${currentCollab.revenueGenerated.toLocaleString()}</p>
+                <p className="text-3xl font-serif font-medium text-artistic-sage">${(currentCollab.revenueGenerated ?? 0).toLocaleString()}</p>
                 <span className="text-[10px] text-artistic-muted block italic">Comisión y valor total de tratamientos</span>
               </div>
             </div>
