@@ -1023,7 +1023,7 @@ export const AdminDashboard: React.FC = () => {
 
             {/* Collaborators List */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {collaborators.map(collab => (
+              {collaborators.filter(c => !(c as any).eliminado).map(collab => (
                 <div key={collab.id} className={`p-6 border rounded-3xl flex flex-col justify-between space-y-4 shadow-xs hover:shadow-sm transition-all ${adminTheme === 'dark' ? 'bg-stone-900 border-stone-800 text-stone-100' : 'bg-white border-artistic-border text-artistic-dark'}`}>
                   <div className="flex items-center gap-3">
                     <img src={collab.avatarUrl} alt={collab.name} className="w-12 h-12 rounded-full object-cover border border-artistic-border shadow-sm" />
