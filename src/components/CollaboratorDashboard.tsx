@@ -50,7 +50,7 @@ export const CollaboratorDashboard: React.FC = () => {
   };
 
   // Tabs: dashboard (mi perfil), services, products, appointments (turnos)
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'turnos' | 'services' | 'products'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'turnos' | 'retiros' | 'services' | 'products'>('dashboard');
 
   // Profile editing
   const [avatarInput, setAvatarInput] = useState(currentCollab.avatarUrl);
@@ -148,6 +148,16 @@ export const CollaboratorDashboard: React.FC = () => {
 
   // Filter appointments specifically assigned to this collaborator
   const myAppointments = appointments.filter(a => a.collaboratorId === currentCollab.id);
+
+  // Pedidos de retiro (canasto de productos). No se asignan a un profesional,
+  // así que los ve TODO el equipo para prepararlos y entregarlos.
+  const retiros = appointments.filter(a => (a as any).tipo === 'retiro');
+  const retirosPendientes = retiros.filter(a => a.status === 'pending').length;
+
+  const marcarRetiroEntregado = (id: string) => {
+    setAppointments(prev => prev.map(a => a.id === id ? { ...a, status: 'completed' } : a));
+    triggerToast(language === 'es' ? '✅ Pedido entregado' : '✅ Delivered');
+  };
 
   // ── Gestión de SERVICIOS (alta / edición / borrado) ────────────────
   const emptyService = { nameEs: '', nameEn: '', descEs: '', price: 0, duration: 60, category: (categories && categories[0]) || 'FACIAL', imageUrl: '' };
@@ -295,6 +305,21 @@ export const CollaboratorDashboard: React.FC = () => {
               {myAppointments.filter(a => a.status === 'pending').length > 0 && (
                 <span className="ml-auto bg-artistic-sage text-white font-semibold px-2 py-0.5 rounded-full text-[9px]">
                   {myAppointments.filter(a => a.status === 'pending').length}
+                </span>
+              )}
+            </button>
+            <button
+              id="collab_tab_retiros"
+              onClick={() => setActiveTab('retiros')}
+              className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2.5 transition-all ${
+                activeTab === 'retiros' ? 'bg-artistic-sage/10 border border-artistic-sage/20 text-artistic-sage font-semibold' : 'text-artistic-muted hover:bg-artistic-cream/70 hover:text-artistic-dark'
+              }`}
+            >
+              <ShoppingBag className="w-4 h-4" />
+              {language === 'es' ? 'Retiros' : 'Pickups'}
+              {retirosPendientes > 0 && (
+                <span className="ml-auto bg-artistic-sage text-white font-semibold px-2 py-0.5 rounded-full text-[9px]">
+                  {retirosPendientes}
                 </span>
               )}
             </button>
@@ -553,6 +578,83 @@ export const CollaboratorDashboard: React.FC = () => {
                         >
                           <Check className="w-3.5 h-3.5 stroke-[3]" />
                           Concretar Turno
+                        </button>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Tab: Retiros (pedidos de productos del canasto, compartidos con el equipo) */}
+        {activeTab === 'retiros' && (
+          <div className="space-y-6">
+            <div className="border-b border-artistic-border pb-6">
+              <h3 className="text-2xl font-serif font-medium italic tracking-tight text-artistic-dark">{language === 'es' ? 'Pedidos para Retirar' : 'Pickup Orders'}</h3>
+              <p className="text-xs text-artistic-muted mt-1">{language === 'es' ? 'Productos que las clientas encargaron para pasar a buscar. Preparalos y marcá "Entregado".' : 'Products clients ordered for pickup. Prepare them and mark "Delivered".'}</p>
+            </div>
+
+            <div className="space-y-4">
+              {retiros.length === 0 ? (
+                <div className="p-8 bg-white border border-artistic-border rounded-3xl text-center text-artistic-muted italic shadow-xs">
+                  {language === 'es' ? 'No hay pedidos de retiro por ahora.' : 'No pickup orders yet.'}
+                </div>
+              ) : (
+                retiros.map(appt => {
+                  const items = (appt as any).items || [];
+                  return (
+                    <div key={appt.id} className="p-6 bg-white border border-artistic-border rounded-3xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs hover:shadow-sm transition-all">
+                      <div className="space-y-2 min-w-0">
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-wider border ${
+                            appt.status === 'completed'
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                              : 'bg-artistic-sage/10 text-artistic-sage border-artistic-sage/20'
+                          }`}>
+                            {appt.status === 'completed' ? (language === 'es' ? 'Entregado' : 'Delivered') : (language === 'es' ? 'Pendiente' : 'Pending')}
+                          </span>
+                          <span className="text-xs font-serif font-medium text-artistic-dark">{appt.clientName}</span>
+                        </div>
+
+                        <div className="bg-artistic-cream/50 border border-artistic-border rounded-xl p-3">
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-artistic-sage mb-1">🧺 {language === 'es' ? 'Pedido' : 'Order'}</p>
+                          {items.length === 0 ? (
+                            <p className="text-xs text-artistic-muted italic">{language === 'es' ? '(sin detalle de productos)' : '(no product detail)'}</p>
+                          ) : items.map((it: any) => (
+                            <p key={it.productId} className="text-xs text-artistic-dark">
+                              {it.qty}× {language === 'es' ? it.nameEs : it.nameEn}
+                              <span className="text-artistic-muted"> — ${(it.price * it.qty).toLocaleString('es-AR')}</span>
+                            </p>
+                          ))}
+                        </div>
+
+                        <div className="text-[11px] text-artistic-muted space-y-0.5">
+                          {(appt.date || appt.time) && <p>📅 {appt.date} {appt.time && `· 🕒 ${appt.time} hs`}</p>}
+                          <p>Total: <span className="text-artistic-sage font-semibold font-mono">${(appt.price || 0).toLocaleString('es-AR')}</span></p>
+                        </div>
+
+                        {appt.clientPhone && (
+                          <a
+                            href={`https://wa.me/${String(appt.clientPhone).replace(/\D/g, '')}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 hover:text-emerald-700"
+                          >
+                            📱 {appt.clientPhone}
+                          </a>
+                        )}
+                      </div>
+
+                      {appt.status !== 'completed' && (
+                        <button
+                          id={`deliver_pickup_${appt.id}`}
+                          onClick={() => marcarRetiroEntregado(appt.id)}
+                          className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-full text-xs transition-colors flex items-center gap-1.5 uppercase tracking-wider shrink-0"
+                        >
+                          <Check className="w-3.5 h-3.5 stroke-[3]" />
+                          {language === 'es' ? 'Entregado' : 'Delivered'}
                         </button>
                       )}
                     </div>
