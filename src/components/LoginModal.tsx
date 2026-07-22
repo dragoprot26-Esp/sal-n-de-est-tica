@@ -69,7 +69,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
         setLoading(false);
       }
     } else {
-      // Colaborador: login real (cuenta segura) + flujo de aprobación del dueño.
+      // Colaborador: login real (cuenta segura). Sin espera de aprobación:
+      // el dueño ya lo autorizó al crearlo desde el panel. Entra directo.
       const res = await loginColab(license, username, password);
       if (!res.ok) {
         setErrorMsg(res.msg || getTranslation(language, 'credentialsError'));
@@ -80,10 +81,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
       // dispositivo del colaborador está vacío/con demos).
       const foundCollab = (res as any).collab;
 
-      if (foundCollab && foundCollab.esAdmin) {
-        // Admin 2: acceso completo, SIN esperar aprobación (es de confianza).
+      if (foundCollab) {
+        // La tilde "Admin 2" define el alcance: acceso completo (admin) o
+        // panel de colaborador. En ambos casos entra directo, sin esperar nada.
         setCurrentUser({
-          role: 'admin',
+          role: foundCollab.esAdmin ? 'admin' : 'collaborator',
           id: foundCollab.id,
           name: foundCollab.name,
           username: foundCollab.username
@@ -93,29 +95,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
         }
         setLoading(false);
         onClose();
-      } else if (foundCollab) {
-        // Colaborador normal: espera la aprobación del dueño (seguridad).
-        setCollabWaiting(true);
-        const approved = await requestCollaboratorAccess(foundCollab.username, foundCollab.name);
-
-        if (approved) {
-          setCurrentUser({
-            role: 'collaborator',
-            id: foundCollab.id,
-            name: foundCollab.name,
-            username: foundCollab.username
-          });
-          if (biometricsChecked) {
-            toggleBiometricsForUser(foundCollab.username, true);
-          }
-          setCollabWaiting(false);
-          setLoading(false);
-          onClose();
-        } else {
-          setErrorMsg(language === 'es' ? 'Acceso rechazado por el Administrador.' : 'Access denied by Administrator.');
-          setCollabWaiting(false);
-          setLoading(false);
-        }
       } else {
         setErrorMsg(getTranslation(language, 'credentialsError'));
         setLoading(false);
@@ -152,23 +131,15 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
       } else {
         const collab = collaborators.find(c => c.username === defaultUser);
         if (collab) {
-          setCollabWaiting(true);
-          const approved = await requestCollaboratorAccess(collab.username);
-          if (approved) {
-            setCurrentUser({
-              role: 'collaborator',
-              id: collab.id,
-              name: collab.name,
-              username: collab.username
-            });
-            setCollabWaiting(false);
-            setLoading(false);
-            onClose();
-          } else {
-            setErrorMsg(language === 'es' ? 'Acceso biométrico rechazado por el Admin.' : 'Biometric access denied by Admin.');
-            setCollabWaiting(false);
-            setLoading(false);
-          }
+          // Sin espera de aprobación: entra directo (la tilde define el alcance).
+          setCurrentUser({
+            role: (collab as any).esAdmin ? 'admin' : 'collaborator',
+            id: collab.id,
+            name: collab.name,
+            username: collab.username
+          });
+          setLoading(false);
+          onClose();
         } else {
           setErrorMsg(getTranslation(language, 'biometricsNotSupported'));
           setLoading(false);
