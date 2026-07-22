@@ -687,25 +687,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => clearInterval(iv);
   }, [licenseCode, currentUser]);
 
-  // El PANEL del dueño sondea las solicitudes de acceso pendientes en la nube.
-  // Así ve el pedido del colaborador aunque haya entrado desde otro celular.
-  useEffect(() => {
-    if (!licenseCode || !currentUser || currentUser.role !== 'admin') return;
-    let cancelado = false;
-    const traer = async () => {
-      const pend = await listarSolicitudes(licenseCode);
-      if (cancelado) return;
-      setPendingAccessRequests(pend.map((s) => ({
-        id: s.usuario,
-        username: s.usuario,
-        name: s.nombre || s.usuario,
-        timestamp: s.creado || ''
-      })));
-    };
-    traer();
-    const iv = setInterval(traer, 4000);
-    return () => { cancelado = true; clearInterval(iv); };
-  }, [licenseCode, currentUser]);
+  // (Se quitó la espera de aprobación: el dueño autoriza al colaborador al
+  //  crearlo desde el panel, y entra directo. Ya no se sondean solicitudes.)
 
   return (
     <AppContext.Provider value={{
