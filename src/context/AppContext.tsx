@@ -48,6 +48,7 @@ interface AppContextProps {
   setCurrentUser: React.Dispatch<React.SetStateAction<{ role: 'admin' | 'collaborator'; id: string; name: string; username: string } | null>>;
   licenseCode: string;
   publicCode: string;
+  publicCollabs: any[];
   bloqueada: boolean;
   loginDueno: (codigo: string, usuario: string, pass: string) => Promise<{ ok: boolean; msg?: string }>;
   loginColab: (codigo: string, usuario: string, pass: string) => Promise<{ ok: boolean; msg?: string; collab?: any }>;
@@ -140,6 +141,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Molde CyC: código de licencia (panel) y código público (?codigo=)
   const [licenseCode, setLicenseCode] = useState<string>('');
   const [publicCode, setPublicCode] = useState<string>('');
+  // Profesionales que muestra la página pública (versión recortada y segura:
+  // solo id, nombre y foto). Se mantiene APARTE de 'collaborators' para no
+  // romper el panel ni pisar usuarios/contraseñas en la nube.
+  const [publicCollabs, setPublicCollabs] = useState<any[]>([]);
   const [bloqueada, setBloqueada] = useState<boolean>(false);
   const hydratingRef = React.useRef(false);
   const saveTimerRef = React.useRef<any>(null);
@@ -569,7 +574,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (dd.tenants) { setTenants(dd.tenants); if (dd.tenants[0]) setActiveTenantState(dd.tenants[0]); }
       if (dd.services) setServices(dd.services);
       if (dd.products) setProducts(dd.products);
-      if (dd.collaborators) setCollaborators(dd.collaborators);  // profesionales para el selector de reserva
+      // OJO: la pública devuelve colaboradores RECORTADOS (solo id/nombre/foto).
+      // Van a un estado APARTE: si pisáramos 'collaborators' romperíamos el panel
+      // y podríamos guardar en la nube registros sin usuario ni contraseña.
+      if (dd.collaborators) setPublicCollabs(dd.collaborators);
       if (dd.comments) setComments(dd.comments);
       setTimeout(() => { hydratingRef.current = false; }, 300);
     };
@@ -649,6 +657,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setLanguage,
       licenseCode,
       publicCode,
+      publicCollabs,
       bloqueada,
       loginDueno,
       loginColab,
