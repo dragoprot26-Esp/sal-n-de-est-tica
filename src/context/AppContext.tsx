@@ -655,6 +655,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (dd.tenants) { setTenants(dd.tenants); if (dd.tenants[0]) setActiveTenantState(dd.tenants[0]); }
       if (dd.services) setServices(dd.services);
       if (dd.products) setProducts(dd.products);
+      if (Array.isArray(dd.categories)) setCategories(dd.categories);  // filtro de categorías del inquilino
       // OJO: la pública devuelve colaboradores RECORTADOS (solo id/nombre/foto).
       // Van a un estado APARTE: si pisáramos 'collaborators' romperíamos el panel
       // y podríamos guardar en la nube registros sin usuario ni contraseña.
