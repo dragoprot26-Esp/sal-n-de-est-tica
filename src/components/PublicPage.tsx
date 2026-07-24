@@ -696,6 +696,20 @@ export const PublicPage: React.FC<PublicPageProps> = ({ onOpenLogin }) => {
             </div>
           </div>
         </div>
+
+        {/* Botón: Visitá la Vitrina (catálogo de todas las apps CyC) */}
+        <div className="max-w-7xl mx-auto mt-12 pt-8 border-t border-artistic-cream/10 flex justify-center">
+          <a
+            href="https://vitrina-cyc.vercel.app"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-artistic-sage hover:bg-artistic-sage/90 text-white text-xs font-semibold uppercase tracking-widest transition-all shadow-md hover:shadow-lg"
+          >
+            <Globe className="w-4 h-4" />
+            {language === 'es' ? 'Visitá la Vitrina' : 'Visit the Showcase'}
+            <ChevronRight className="w-3.5 h-3.5" />
+          </a>
+        </div>
       </footer>
 
       {/* Booking Modal */}
