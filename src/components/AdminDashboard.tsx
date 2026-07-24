@@ -14,7 +14,7 @@ import {
   BarChart, Calendar, Settings, ShieldAlert, Check, X, 
   Trash2, Plus, Download, Upload, LogOut, Phone, Users, 
   PlusCircle, Edit2, Lock, Save, ListFilter, Globe, Database, QrCode, Palette, RefreshCw,
-  Moon, Sun, Image, CalendarDays
+  Moon, Sun, Image, CalendarDays, Sparkles
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -2187,6 +2187,62 @@ export const AdminDashboard: React.FC = () => {
                     </div>
                   </div>
 
+                </div>
+
+                {/* Card: Textos de las secciones (editables por el inquilino) */}
+                <div className="p-6 bg-white border border-artistic-border rounded-3xl space-y-4 shadow-xs">
+                  <h4 className="font-serif italic font-medium text-artistic-dark text-base flex items-center gap-2">
+                    <Sparkles className="w-4.5 h-4.5 text-artistic-sage" />
+                    {language === 'es' ? 'Textos de las secciones' : 'Section texts'}
+                  </h4>
+                  <p className="text-xs text-artistic-muted leading-relaxed">
+                    {language === 'es'
+                      ? 'Cambiá los títulos y subtítulos que aparecen en tu página. Si los dejás vacíos, se usan los textos por defecto.'
+                      : 'Edit the titles and subtitles shown on your page. Leave empty to use the defaults.'}
+                  </p>
+
+                  <div className="space-y-4 pt-1">
+                    <div>
+                      <label className="block text-[10px] text-artistic-muted uppercase font-semibold tracking-wider mb-1.5">{language === 'es' ? 'Título de Servicios' : 'Services title'}</label>
+                      <input
+                        type="text"
+                        value={activeTenant.theme?.servicesTitle || ''}
+                        onChange={(e) => updateTenantTheme({ servicesTitle: e.target.value })}
+                        placeholder="Nuestros Servicios de Primer Nivel"
+                        className="w-full px-4 py-2.5 bg-artistic-bg border border-artistic-border rounded-xl text-xs focus:outline-none focus:border-artistic-sage focus:ring-1 focus:ring-artistic-sage"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] text-artistic-muted uppercase font-semibold tracking-wider mb-1.5">{language === 'es' ? 'Subtítulo de Servicios' : 'Services subtitle'}</label>
+                      <input
+                        type="text"
+                        value={activeTenant.theme?.servicesSubtitle || ''}
+                        onChange={(e) => updateTenantTheme({ servicesSubtitle: e.target.value })}
+                        placeholder="Tratamientos personalizados para resaltar tu belleza natural y restaurar tu bienestar."
+                        className="w-full px-4 py-2.5 bg-artistic-bg border border-artistic-border rounded-xl text-xs focus:outline-none focus:border-artistic-sage focus:ring-1 focus:ring-artistic-sage"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] text-artistic-muted uppercase font-semibold tracking-wider mb-1.5">{language === 'es' ? 'Título de Productos' : 'Products title'}</label>
+                      <input
+                        type="text"
+                        value={activeTenant.theme?.productsTitle || ''}
+                        onChange={(e) => updateTenantTheme({ productsTitle: e.target.value })}
+                        placeholder="Productos de Venta Premium"
+                        className="w-full px-4 py-2.5 bg-artistic-bg border border-artistic-border rounded-xl text-xs focus:outline-none focus:border-artistic-sage focus:ring-1 focus:ring-artistic-sage"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] text-artistic-muted uppercase font-semibold tracking-wider mb-1.5">{language === 'es' ? 'Subtítulo de Productos' : 'Products subtitle'}</label>
+                      <input
+                        type="text"
+                        value={activeTenant.theme?.productsSubtitle || ''}
+                        onChange={(e) => updateTenantTheme({ productsSubtitle: e.target.value })}
+                        placeholder="Lleva la experiencia del salón a tu hogar con nuestra exclusiva línea de cosméticos."
+                        className="w-full px-4 py-2.5 bg-artistic-bg border border-artistic-border rounded-xl text-xs focus:outline-none focus:border-artistic-sage focus:ring-1 focus:ring-artistic-sage"
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 {/* Card: Custom Login Background and transparency */}
