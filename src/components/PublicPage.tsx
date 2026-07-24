@@ -414,8 +414,8 @@ export const PublicPage: React.FC<PublicPageProps> = ({ onOpenLogin }) => {
       {/* Services Section */}
       <section className="max-w-7xl mx-auto px-4 py-16" id="services_catalog_sec">
         <div className="text-center space-y-3 mb-12">
-          <h3 className="text-3xl sm:text-4xl font-light italic font-serif text-artistic-dark">{getTranslation(language, 'ourServices')}</h3>
-          <p className="text-sm text-artistic-muted max-w-xl mx-auto">{getTranslation(language, 'servicesSubtitle')}</p>
+          <h3 className="text-3xl sm:text-4xl font-light italic font-serif text-artistic-dark">{(theme.servicesTitle && theme.servicesTitle.trim()) || getTranslation(language, 'ourServices')}</h3>
+          <p className="text-sm text-artistic-muted max-w-xl mx-auto">{(theme.servicesSubtitle && theme.servicesSubtitle.trim()) || getTranslation(language, 'servicesSubtitle')}</p>
           
           {/* Category Filter */}
           <div className="flex flex-wrap items-center justify-center gap-2 pt-6">
@@ -493,8 +493,8 @@ export const PublicPage: React.FC<PublicPageProps> = ({ onOpenLogin }) => {
       {/* Products Shop Section */}
       <section className="max-w-7xl mx-auto px-4 py-16" id="products_showcase_sec">
         <div className="text-center space-y-3 mb-12">
-          <h3 className="text-3xl sm:text-4xl font-light italic font-serif text-artistic-dark">{getTranslation(language, 'ourProducts')}</h3>
-          <p className="text-sm text-artistic-muted max-w-xl mx-auto">{getTranslation(language, 'productsSubtitle')}</p>
+          <h3 className="text-3xl sm:text-4xl font-light italic font-serif text-artistic-dark">{(theme.productsTitle && theme.productsTitle.trim()) || getTranslation(language, 'ourProducts')}</h3>
+          <p className="text-sm text-artistic-muted max-w-xl mx-auto">{(theme.productsSubtitle && theme.productsSubtitle.trim()) || getTranslation(language, 'productsSubtitle')}</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
