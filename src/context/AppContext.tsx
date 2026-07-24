@@ -486,7 +486,52 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem('bella_codigo', codigo);
     const d = await cloudLoad(codigo);
     if (d && ((d as any).tenants || (d as any).services)) { hydrate(d); }
-    else { await cloudSave(codigo, snapshot()); }
+    else {
+      // Licencia NUEVA (nube vacía): arranca LIMPIA. No heredamos los datos
+      // demo ni los del inquilino anterior que quedaron en memoria. Dejamos un
+      // salón fresco + UN colaborador de ejemplo (editable o borrable).
+      const ejemplo: Collaborator = {
+        id: `collab-${Date.now()}`,
+        name: 'Colaborador de ejemplo',
+        phone: '',
+        username: 'colaborador1',
+        password: '123456',
+        esAdmin: false,
+        avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=150',
+        status: 'approved',
+        biometricsEnabled: false,
+        servicesCompleted: 0,
+        revenueGenerated: 0
+      };
+      const salonNuevo: Tenant = {
+        id: codigo,
+        name: (lic as any).nombre_negocio || (lic as any).nombre || 'Mi Salón de Estética',
+        tagline: 'Bienvenidos a nuestro espacio de belleza y bienestar.',
+        logo: '',
+        address: '',
+        locationUrl: '',
+        phonePrefix: '+549',
+        rating: 5.0,
+        phone: '',
+        workingDays: 'Lunes a Sábado',
+        workingHours: '09:00 a 20:00 hs',
+        theme: {}
+      };
+      const limpio: any = {
+        tenants: [salonNuevo],
+        services: [],
+        products: [],
+        collaborators: [ejemplo],
+        appointments: [],
+        comments: [],
+        salesHistory: [],
+        categories: ['facial', 'corporal', 'unas', 'cabello', 'maquillaje'],
+        phonePrefix: '+549',
+        biometricsEnabledUsers: []
+      };
+      hydrate(limpio);
+      await cloudSave(codigo, limpio);
+    }
     return { ok: true };
   };
 
