@@ -1062,6 +1062,72 @@ export const AdminDashboard: React.FC = () => {
               </div>
             </div>
 
+            {/* Categorías del filtro público: agregar / quitar (visible siempre) */}
+            <div className={`p-6 border rounded-3xl shadow-sm ${adminTheme === 'dark' ? 'bg-stone-900 border-stone-800' : 'bg-white border-artistic-border'}`}>
+              <h4 className="font-serif italic font-medium text-artistic-dark text-base mb-1 flex items-center gap-2">
+                <ListFilter className="w-4 h-4 text-artistic-sage" />
+                {language === 'es' ? 'Categorías de la página' : 'Page categories'}
+              </h4>
+              <p className="text-xs text-artistic-muted mb-4">
+                {language === 'es'
+                  ? 'Estas son las categorías que ve el cliente en el filtro. Tocá la ✕ para quitar las que no uses (ej: Corporal).'
+                  : 'These are the categories shown to clients. Tap ✕ to remove the ones you don\'t use.'}
+              </p>
+
+              <div className="flex flex-wrap gap-2 mb-4">
+                {categories.length === 0 ? (
+                  <span className="text-xs text-artistic-muted italic">{language === 'es' ? 'No hay categorías.' : 'No categories.'}</span>
+                ) : categories.map(cat => (
+                  <span key={cat} className={`inline-flex items-center gap-2 border px-3 py-1.5 rounded-full text-[11px] font-semibold uppercase tracking-wider ${adminTheme === 'dark' ? 'bg-stone-950 border-stone-800 text-stone-200' : 'bg-artistic-cream/50 border-artistic-border text-artistic-dark'}`}>
+                    {cat}
+                    <button
+                      type="button"
+                      id={`cat_remove_${cat}`}
+                      onClick={() => {
+                        if (categories.length <= 1) {
+                          triggerToast(language === 'es' ? 'Debe quedar al menos una categoría.' : 'At least one category is required.');
+                          return;
+                        }
+                        setCategories(prev => prev.filter(c => c !== cat));
+                        if (newServiceCategory === cat) setNewServiceCategory(categories.find(c => c !== cat) || '');
+                        triggerToast(language === 'es' ? `Categoría "${cat}" quitada.` : `Category "${cat}" removed.`);
+                      }}
+                      className="w-4 h-4 flex items-center justify-center rounded-full bg-red-500 hover:bg-red-600 text-white text-[10px] font-bold cursor-pointer"
+                      title={language === 'es' ? 'Quitar' : 'Remove'}
+                    >
+                      ✕
+                    </button>
+                  </span>
+                ))}
+              </div>
+
+              <div className="flex gap-2 max-w-sm">
+                <input
+                  type="text"
+                  id="cat_add_input_visible"
+                  placeholder={language === 'es' ? 'Nueva categoría…' : 'New category…'}
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value.toLowerCase())}
+                  className={`flex-1 px-4 py-2.5 rounded-xl text-xs focus:outline-none focus:ring-1 ${adminTheme === 'dark' ? 'bg-stone-950 border-stone-800 text-stone-100 focus:ring-stone-500' : 'bg-artistic-bg border-artistic-border text-artistic-dark focus:ring-artistic-sage'}`}
+                />
+                <button
+                  type="button"
+                  id="cat_add_btn_visible"
+                  onClick={() => {
+                    const c = newCategoryName.trim();
+                    if (!c) return;
+                    if (categories.includes(c)) { triggerToast(language === 'es' ? 'La categoría ya existe.' : 'Category already exists.'); return; }
+                    setCategories(prev => [...prev, c]);
+                    setNewCategoryName('');
+                    triggerToast(language === 'es' ? 'Categoría agregada.' : 'Category added.');
+                  }}
+                  className="px-5 py-2.5 bg-artistic-sage hover:bg-artistic-dark text-white text-xs font-semibold rounded-xl uppercase tracking-wider cursor-pointer"
+                >
+                  {language === 'es' ? 'Agregar' : 'Add'}
+                </button>
+              </div>
+            </div>
+
             {/* Create Service form */}
             <div className={`p-6 border rounded-3xl shadow-sm ${adminTheme === 'dark' ? 'bg-stone-900 border-stone-800' : 'bg-white border-artistic-border'}`}>
               <h4 className="font-serif italic font-medium text-artistic-dark text-base mb-4 flex items-center justify-between">
