@@ -1,5 +1,5 @@
 /* Service Worker — Salón de Estética (PWA instalable + shell offline) */
-const CACHE = 'bella-v14';
+const CACHE = 'bella-v15';
 const SHELL = ['/', '/index.html', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png'];
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
