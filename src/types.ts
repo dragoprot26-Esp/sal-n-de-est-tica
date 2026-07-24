@@ -17,6 +17,12 @@ export interface ThemeConfig {
   textColor?: string; // hex for general text on public page, e.g. artistic-dark
   loginBgUrl?: string; // base64 representation of local background image for login
   loginBgOpacity?: number; // float value from 0 to 1
+  // Textos editables de las secciones de la página pública (por inquilino).
+  // Si quedan vacíos, se usan los textos por defecto.
+  servicesTitle?: string;    // título de la sección Servicios
+  servicesSubtitle?: string; // subtítulo de la sección Servicios
+  productsTitle?: string;    // título de la sección Productos
+  productsSubtitle?: string; // subtítulo de la sección Productos
 }
 
 export interface Tenant {
